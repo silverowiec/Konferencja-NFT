@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My NFTs</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; }
+    .nft-container { display: flex; flex-wrap: wrap; justify-content: center; }
+    .nft-card { border: 1px solid #ddd; padding: 10px; margin: 10px; width: 200px; }
+    .nft-card img { max-width: 100%; }
+  </style>
+</head>
+<body>
+<h2>Connect Wallet & View NFTs</h2>
+<button id="connectButton">Connect MetaMask</button>
+<p id="userAddress"></p>
+<div class="nft-container" id="nftList"></div>
+
+<script>
+  const connectButton = document.getElementById("connectButton");
+  const userAddressDisplay = document.getElementById("userAddress");
+  const nftList = document.getElementById("nftList");
+
+  const POLYGON_CHAIN_ID = "0x89"; // Hexadecimal for 137
+
+  async function connectWallet() {
+    if (window.ethereum) {
+      try {
+        // Request wallet connection
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        await window.ethereum.request({ method: "eth_requestAccounts" });
+
+        // Ensure the network is Polygon
+        await switchToPolygon();
+
+        const signer = provider.getSigner();
+        const address = await signer.getAddress();
+        userAddressDisplay.innerText = `Connected: ${address}`;
+
+        // Fetch NFTs of the connected wallet
+        fetchNFTs(address, provider);
+      } catch (error) {
+        console.error("Wallet connection failed", error);
+      }
+    } else {
+      alert("Please install MetaMask!");
+    }
+  }
+
+  async function switchToPolygon() {
+    const chainId = await window.ethereum.request({ method: "eth_chainId" });
+
+    // If the current chain is not Polygon, attempt to switch
+    if (chainId !== POLYGON_CHAIN_ID) {
+      try {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: POLYGON_CHAIN_ID }]
+        });
+      } catch (switchError) {
+        // If the chain hasn't been added to MetaMask, it needs to be added first
+        if (switchError.code === 4902) {
+          try {
+            await window.ethereum.request({
+              method: "wallet_addEthereumChain",
+              params: [
+                {
+                  chainId: POLYGON_CHAIN_ID,
+                  chainName: "Polygon Mainnet",
+                  rpcUrls: ["https://polygon-rpc.com/"], // Public RPC for Polygon
+                  nativeCurrency: {
+                    name: "MATIC",
+                    symbol: "MATIC",
+                    decimals: 18,
+                  },
+                  blockExplorerUrls: ["https://polygonscan.com/"],
+                },
+              ],
+            });
+          } catch (addError) {
+            console.error("Failed to add Polygon network", addError);
+          }
+        } else {
+          throw switchError;
+        }
+      }
+    }
+  }
+
+  async function fetchNFTs(walletAddress, provider) {
+    try {
+      // Example: Replace this with the actual NFT contract(s) you want to interact with
+      const nftContractAddress = "<YOUR_ERC721_CONTRACT_ADDRESS>";
+      const nftContractABI = [
+        "function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256)",
+        "function tokenURI(uint256 tokenId) public view returns (string)",
+        "function balanceOf(address owner) external view returns (uint256)"
+      ];
+
+      const nftContract = new ethers.Contract(nftContractAddress, nftContractABI, provider);
+
+      // Get the balance of NFTs
+      const balance = await nftContract.balanceOf(walletAddress);
+      const nftData = [];
+
+      // Fetch tokenURIs for each owned token
+      for (let i = 0; i < balance; i++) {
+        const tokenId = await nftContract.tokenOfOwnerByIndex(walletAddress, i);
+        const tokenURI = await nftContract.tokenURI(tokenId);
+
+        // Note: If the tokenURI is stored as IPFS or off-chain, you may need
+        // to fetch the metadata from the URI here (e.g., using fetch API).
+        nftData.push({ tokenId: tokenId.toString(), tokenURI });
+      }
+
+      // Display the fetched NFTs
+      displayNFTs(nftData);
+    } catch (error) {
+      console.error("Failed to fetch NFTs", error);
+    }
+  }
+
+  function displayNFTs(nfts) {
+    nftList.innerHTML = "";
+    nfts.forEach((nft) => {
+      const card = document.createElement("div");
+      card.className = "nft-card";
+      card.innerHTML = `
+        <p><strong>NFT ID:</strong> ${nft.tokenId}</p>
+        <p><strong>URI:</strong> <a href="${nft.tokenURI}" target="_blank">${nft.tokenURI}</a></p>
+      `;
+      nftList.appendChild(card);
+    });
+  }
+
+  connectButton.addEventListener("click", connectWallet);
+</script>
+</body>
+</html>

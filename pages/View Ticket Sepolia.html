@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My NFTs</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; }
+    .nft-container { display: flex; flex-wrap: wrap; justify-content: center; }
+    .nft-card { border: 1px solid #ddd; padding: 10px; margin: 10px; width: 200px; }
+    .nft-card img { max-width: 100%; }
+  </style>
+</head>
+<body>
+<h2>Connect Wallet & View NFTs</h2>
+<button id="connectButton">Connect MetaMask</button>
+<p id="userAddress"></p>
+<div class="nft-container" id="nftList"></div>
+
+<script>
+  const connectButton = document.getElementById("connectButton");
+  const userAddressDisplay = document.getElementById("userAddress");
+  const nftList = document.getElementById("nftList");
+
+  const SEPOLIA_CHAIN_ID = "0xaa36a7"; // Chain ID for Ethereum Sepolia (Hexadecimal for 11155111)
+
+  async function connectWallet() {
+    if (window.ethereum) {
+      try {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        await window.ethereum.request({ method: "eth_requestAccounts" });
+
+        // Ensure the wallet is on the Sepolia network
+        await switchToSepoliaNetwork();
+
+        const signer = provider.getSigner();
+        const address = await signer.getAddress();
+        userAddressDisplay.innerText = `Connected: ${address}`;
+
+        // Fetch NFTs for the connected wallet
+        fetchNFTs(address, provider);
+      } catch (error) {
+        console.error("Wallet connection failed:", error);
+      }
+    } else {
+      alert("Please install MetaMask!");
+    }
+  }
+
+  async function switchToSepoliaNetwork() {
+    const currentChainId = await window.ethereum.request({ method: "eth_chainId" });
+
+    // If not already on Sepolia, attempt to switch or add the network
+    if (currentChainId !== SEPOLIA_CHAIN_ID) {
+      try {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: SEPOLIA_CHAIN_ID }],
+        });
+      } catch (switchError) {
+        // If Sepolia is not added to MetaMask, prompt the user to add it
+        if (switchError.code === 4902) {
+          try {
+            await window.ethereum.request({
+              method: "wallet_addEthereumChain",
+              params: [
+                {
+                  chainId: SEPOLIA_CHAIN_ID,
+                  chainName: "Ethereum Sepolia Testnet",
+                  rpcUrls: ["https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID"], // Replace with your Infura Project ID
+                  blockExplorerUrls: ["https://sepolia.etherscan.io/"],
+                  nativeCurrency: {
+                    name: "SepoliaETH",
+                    symbol: "ETH",
+                    decimals: 18,
+                  },
+                },
+              ],
+            });
+          } catch (addError) {
+            console.error("Failed to add Sepolia network:", addError);
+          }
+        } else {
+          throw switchError;
+        }
+      }
+    }
+  }
+
+  async function fetchNFTs(walletAddress, provider) {
+    try {
+      // Replace this with the actual NFT contract deployed on Sepolia
+      const nftContractAddress = "0x7C9C66201402fF22d90301701d3Fd7e38EF89bD7";
+      const nftContractABI = [
+        "function balanceOf(address owner) external view returns (uint256)",
+        "function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256)",
+        "function tokenURI(uint256 tokenId) public view returns (string)",
+      ];
+
+      const nftContract = new ethers.Contract(nftContractAddress, nftContractABI, provider);
+
+      // Get the balance of NFTs owned by the connected wallet
+      const balance = await nftContract.balanceOf(walletAddress);
+
+      const nfts = [];
+      for (let i = 0; i < balance; i++) {
+        const tokenId = await nftContract.tokenOfOwnerByIndex(walletAddress, i);
+        const tokenURI = await nftContract.tokenURI(tokenId);
+
+        // Fetch metadata if necessary (stored at tokenURI)
+        nfts.push({ tokenId, tokenURI });
+      }
+
+      // Display the fetched NFTs
+      displayNFTs(nfts);
+    } catch (error) {
+      console.error("Failed to fetch NFTs:", error);
+    }
+  }
+
+  function displayNFTs(nfts) {
+    nftList.innerHTML = "";
+    nfts.forEach((nft) => {
+      const card = document.createElement("div");
+      card.className = "nft-card";
+      card.innerHTML = `
+        <p><strong>Token ID:</strong> ${nft.tokenId}</p>
+        <p><strong>Token URI:</strong> <a href="${nft.tokenURI}" target="_blank">${nft.tokenURI}</a></p>
+      `;
+      nftList.appendChild(card);
+    });
+  }
+
+  connectButton.addEventListener("click", connectWallet);
+</script>
+</body>
+</html>
