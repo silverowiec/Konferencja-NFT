@@ -1,0 +1,28 @@
+{
+  "name": "Example NFT",
+  "description": "This is an example NFT compatible with OpenSea's metadata standard.",
+  "image": "https://example.com/images/example-nft.png",
+  "external_url": "https://example.com",
+  "attributes": [
+    {
+      "trait_type": "Background",
+      "value": "Blue"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "Green"
+    },
+    {
+      "trait_type": "Clothing",
+      "value": "T-Shirt"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "1 of 1"
+    }
+  ],
+  "properties": {
+    "category": "Art",
+    "artist_name": "John Doe"
+  }
+}
