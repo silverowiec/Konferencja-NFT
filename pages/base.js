@@ -1,4 +1,4 @@
-const ERC721Enumerable_ABI = [
+export const ERC721Enumerable_ABI = [
     {
         "constant": true,
         "inputs": [{ "name": "owner", "type": "address" }],
