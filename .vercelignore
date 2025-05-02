@@ -1,0 +1,22 @@
+# Hardhat files and directories
+/artifacts
+/cache
+/contracts
+/typechain-types
+/scripts
+/test
+hardhat.config.ts
+coverage.json
+/coverage
+
+# Development and testing files not needed in production
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+
+# Hardhat dependencies and related config
+tsconfig.json
+
+# Other blockchain-related files
+matadata/
