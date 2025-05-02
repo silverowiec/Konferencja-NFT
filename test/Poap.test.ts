@@ -5,7 +5,6 @@ import { KoPOAP } from "../typechain-types";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
 
 // Extract role constants
-const DEFAULT_ADMIN_ROLE = ethers.keccak256(ethers.toUtf8Bytes("DEFAULT_ADMIN_ROLE"));
 const PAUSER_ROLE = ethers.keccak256(ethers.toUtf8Bytes("PAUSER_ROLE"));
 const MINTER_ROLE = ethers.keccak256(ethers.toUtf8Bytes("MINTER_ROLE"));
 
