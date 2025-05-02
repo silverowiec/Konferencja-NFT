@@ -26,6 +26,8 @@ contract KoPOAP is ERC1155, AccessControl, Pausable {
         bool active;
         string tokenURI;
     }
+    /**
+    let's build a next.js app deployable to vercel later on where we have simple admin panel for lecture creation and qr code generation, qr code redirects lecture attendees to webpage where poap is minted for them (costs covered by private key stored in app, on admins behalf hes a payer) */
     
     event LectureCreated(uint256 indexed lectureId, string name, uint256 timestamp, string tokenURI);
     event POAPClaimed(uint256 indexed lectureId, address indexed attendee);
