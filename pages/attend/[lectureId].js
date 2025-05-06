@@ -15,10 +15,15 @@ export default function AttendLecture() {
   const [mintMessage, setMintMessage] = useState('');
   const [alreadyClaimed, setAlreadyClaimed] = useState(false);
   const [walletConnected, setWalletConnected] = useState(false);
+  const [contractAddress, setContractAddress] = useState('');
+  const [txHash, setTxHash] = useState('');
   
   // Fetch lecture details when the component mounts and lectureId is available
   useEffect(() => {
     if (!lectureId) return;
+    
+    // Set contract address from environment variable
+    setContractAddress(process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '');
     
     async function fetchLecture() {
       try {
@@ -90,6 +95,9 @@ export default function AttendLecture() {
         throw new Error(data.message || 'Failed to mint POAP');
       }
       
+      // Store transaction hash for MetaMask import
+      setTxHash(data.txHash);
+      
       setMintStatus('success');
       setMintMessage('POAP minted successfully! Check your wallet to view your new POAP.');
       setAlreadyClaimed(true);
@@ -97,6 +105,31 @@ export default function AttendLecture() {
       console.error('Error minting POAP:', err);
       setMintStatus('error');
       setMintMessage('Failed to mint POAP: ' + (err.message || 'Unknown error'));
+    }
+  };
+
+  // Function to import token to MetaMask
+  const importTokenToMetaMask = async () => {
+    try {
+      if (!window.ethereum) {
+        throw new Error('MetaMask is not installed');
+      }
+      
+      // Request to add the token to MetaMask
+      await window.ethereum.request({
+        method: 'wallet_watchAsset',
+        params: {
+          type: 'ERC1155', // Using ERC1155 token type
+          options: {
+            address: contractAddress, // Contract address
+            tokenId: lectureId, // Token ID is the lecture ID for POAPs
+          },
+        },
+      });
+      
+    } catch (error) {
+      console.error('Error importing token to MetaMask:', error);
+      alert('Failed to import token to MetaMask: ' + (error.message || 'Unknown error'));
     }
   };
 
@@ -145,33 +178,83 @@ export default function AttendLecture() {
                 <p>Connected Wallet: {walletAddress}</p>
                 
                 {alreadyClaimed ? (
-                  <p className="success" style={{ marginTop: '10px' }}>
-                    You have already claimed this POAP!
-                  </p>
+                  // User has already claimed - show claimed message and import button
+                  <>
+                    <p className="success" style={{ marginTop: '10px' }}>
+                      {mintStatus === 'success' 
+                        ? mintMessage 
+                        : 'You have already claimed this POAP!'}
+                    </p>
+                    {contractAddress && (
+                      <div style={{ marginTop: '15px' }}>
+                        <button 
+                          onClick={importTokenToMetaMask}
+                          className="btn-secondary"
+                        >
+                          Import Token to MetaMask
+                        </button>
+                        <p style={{ fontSize: '0.8rem', marginTop: '5px', color: '#666' }}>
+                          Click to add this POAP to your MetaMask wallet for easy viewing
+                        </p>
+                      </div>
+                    )}
+                  </>
                 ) : (
-                  <div style={{ marginTop: '10px' }}>
-                    <p>You can now claim your POAP for attending this lecture.</p>
-                    <button 
-                      onClick={mintPOAP} 
-                      disabled={mintStatus === 'loading'}
-                      className="btn-success"
-                      style={{ marginTop: '10px' }}
-                    >
-                      {mintStatus === 'loading' ? 'Minting...' : 'Claim POAP'}
-                    </button>
-                  </div>
-                )}
-                
-                {mintStatus === 'success' && (
-                  <p className="success" style={{ marginTop: '10px' }}>
-                    {mintMessage}
-                  </p>
-                )}
-                
-                {mintStatus === 'error' && (
-                  <p className="error" style={{ marginTop: '10px' }}>
-                    {mintMessage}
-                  </p>
+                  // User hasn't claimed yet - show claim button or minting status
+                  <>
+                    {mintStatus === 'idle' && (
+                      <div style={{ marginTop: '10px' }}>
+                        <p>You can now claim your POAP for attending this lecture.</p>
+                        <button 
+                          onClick={mintPOAP}
+                          className="btn-success"
+                          style={{ marginTop: '10px' }}
+                        >
+                          Claim POAP
+                        </button>
+                      </div>
+                    )}
+                    
+                    {mintStatus === 'loading' && (
+                      <div style={{ marginTop: '10px' }}>
+                        <p>{mintMessage}</p>
+                        <button 
+                          disabled
+                          className="btn-success"
+                          style={{ marginTop: '10px' }}
+                        >
+                          Minting...
+                        </button>
+                      </div>
+                    )}
+                    
+                    {mintStatus === 'error' && (
+                      <p className="error" style={{ marginTop: '10px' }}>
+                        {mintMessage}
+                      </p>
+                    )}
+                    
+                    {mintStatus === 'success' && (
+                      <>
+                        <p className="success" style={{ marginTop: '10px' }}>
+                          {mintMessage}
+                        </p>
+                        {contractAddress && (
+                          <div style={{ marginTop: '15px' }}>
+                            <button 
+                              onClick={importTokenToMetaMask} 
+                              className="btn-secondary"
+                            >
+                              Import Token to MetaMask
+                            </button>
+                            <p style={{ fontSize: '0.8rem', marginTop: '5px', color: '#666' }}>
+                              Click to add this POAP to your MetaMask wallet for easy viewing
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </>
                 )}
               </div>
             )}

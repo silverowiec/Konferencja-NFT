@@ -1,14 +1,13 @@
 import { useState } from 'react';
-import { authenticate } from '../../lib/auth';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function LoginForm() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const { login, isLoading } = useAuth();
   
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
@@ -18,13 +17,11 @@ export default function LoginForm() {
       return;
     }
     
-    // Authenticate
-    const isAuthenticated = authenticate(username, password);
+    // Authenticate using the login function from AuthContext
+    const response = await login(username, password);
     
-    if (isAuthenticated) {
-      login(true);
-    } else {
-      setError('Invalid username or password');
+    if (!response.success) {
+      setError(response.message || 'Invalid username or password');
     }
   };
   
@@ -42,6 +39,7 @@ export default function LoginForm() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Enter username"
+            disabled={isLoading}
           />
         </div>
         
@@ -53,10 +51,13 @@ export default function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter password"
+            disabled={isLoading}
           />
         </div>
         
-        <button type="submit">Login</button>
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? 'Logging in...' : 'Login'}
+        </button>
       </form>
     </div>
   );

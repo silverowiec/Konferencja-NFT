@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 export default function Layout({ children, title = 'POAP Lecture App' }) {
   const [isMounted, setIsMounted] = useState(false);
-  const { isLoggedIn, logoutUser } = useAuth();
+  const { isLoggedIn, logout, username, isLoading } = useAuth();
   
   // Prevent hydration errors by only rendering after mount
   useEffect(() => {
@@ -33,20 +33,25 @@ export default function Layout({ children, title = 'POAP Lecture App' }) {
               </Link>
             )}
             {/* Show login link for non-logged-in users */}
-            {!isLoggedIn && (
+            {!isLoading && !isLoggedIn && (
               <Link href="/admin" style={{ marginRight: '20px' }}>
                 Admin Login
               </Link>
             )}
             {/* Show logout button for logged-in users */}
             {isLoggedIn && (
-              <button 
-                onClick={logoutUser}
-                className="btn-secondary"
-                style={{ fontSize: '0.9rem', padding: '5px 10px' }}
-              >
-                Logout
-              </button>
+              <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+                <span style={{ marginRight: '15px', fontSize: '0.9rem' }}>
+                  Hello, {username || 'Admin'}
+                </span>
+                <button 
+                  onClick={logout}
+                  className="btn-secondary"
+                  style={{ fontSize: '0.9rem', padding: '5px 10px' }}
+                >
+                  Logout
+                </button>
+              </div>
             )}
           </div>
         </nav>
