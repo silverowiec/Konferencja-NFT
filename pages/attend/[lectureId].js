@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/common/Layout';
-import { getLecture, hasClaimed } from '../../lib/blockchain';
+import { getLecture } from '../../lib/blockchain';
 
 export default function AttendLecture() {
   const router = useRouter();
@@ -55,13 +55,24 @@ export default function AttendLecture() {
       setWalletAddress(address);
       setWalletConnected(true);
       
-      // Check if user has already claimed this POAP
+      // Check if user has already claimed this POAP using secure API
       if (lectureId) {
-        const claimed = await hasClaimed(lectureId, address);
-        setAlreadyClaimed(claimed);
-        if (claimed) {
-          setMintStatus('success');
-          setMintMessage('You have already claimed this POAP!');
+        try {
+          const response = await fetch(`/api/lectures/check-claimed?lectureId=${lectureId}&address=${address}`);
+          const data = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(data.message || 'Failed to check claim status');
+          }
+          
+          setAlreadyClaimed(data.claimed);
+          if (data.claimed) {
+            setMintStatus('success');
+            setMintMessage('You have already claimed this POAP!');
+          }
+        } catch (error) {
+          console.error('Error checking claim status:', error);
+          // Continue without setting claim status as a fallback
         }
       }
     } catch (err) {

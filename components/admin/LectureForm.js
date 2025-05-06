@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { createLecture } from '../../lib/blockchain';
 
 export default function LectureForm({ onLectureCreated }) {
   const [name, setName] = useState('');
@@ -10,7 +9,7 @@ export default function LectureForm({ onLectureCreated }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Handle form submission
+  // Handle form submission using secure API endpoint
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -27,22 +26,26 @@ export default function LectureForm({ onLectureCreated }) {
       const dateObj = new Date(`${date}T${time}`);
       const timestamp = Math.floor(dateObj.getTime() / 1000);
       
-      // Get admin private key from .env (in production this should be securely handled)
-      const adminPrivateKey = process.env.NEXT_PUBLIC_ADMIN_PRIVATE_KEY;
+      // Call the secure API endpoint for lecture creation
+      const response = await fetch('/api/lectures/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          timestamp,
+          tokenURI
+        }),
+      });
       
-      if (!adminPrivateKey) {
-        throw new Error('Admin private key not configured');
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to create lecture');
       }
       
-      // Create lecture via smart contract
-      const lectureId = await createLecture(
-        adminPrivateKey,
-        name,
-        timestamp,
-        tokenURI
-      );
-      
-      setSuccess(`Lecture created successfully! Lecture ID: ${lectureId}`);
+      setSuccess(`Lecture created successfully! Lecture ID: ${data.lectureId}`);
       
       // Reset form
       setName('');
@@ -52,7 +55,7 @@ export default function LectureForm({ onLectureCreated }) {
       
       // Notify parent component
       if (onLectureCreated) {
-        onLectureCreated(lectureId);
+        onLectureCreated(data.lectureId);
       }
     } catch (err) {
       console.error('Error creating lecture:', err);
