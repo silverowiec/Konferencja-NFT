@@ -20,16 +20,20 @@ contract KoPOAP is ERC1155, AccessControl, Pausable {
     // Mapping to track which addresses have claimed which lecture POAPs
     mapping(uint256 => mapping(address => bool)) private _claimed;
     
+    // Mapping from lecture hash to lecture ID for QR code verification
+    mapping(bytes32 => uint256) private _lectureHashToId;
+    
     struct LectureInfo {
         string name;
         uint256 timestamp;
         bool active;
         string tokenURI;
+        bytes32 lectureHash;
     }
     /**
     let's build a next.js app deployable to vercel later on where we have simple admin panel for lecture creation and qr code generation, qr code redirects lecture attendees to webpage where poap is minted for them (costs covered by private key stored in app, on admins behalf hes a payer) */
     
-    event LectureCreated(uint256 indexed lectureId, string name, uint256 timestamp, string tokenURI);
+    event LectureCreated(uint256 indexed lectureId, string name, uint256 timestamp, string tokenURI, bytes32 lectureHash);
     event POAPClaimed(uint256 indexed lectureId, address indexed attendee);
 
     constructor(
@@ -56,17 +60,39 @@ contract KoPOAP is ERC1155, AccessControl, Pausable {
         returns (uint256) 
     {
         uint256 lectureId = _lectureCount + 1;
+        
+        // Generate a unique hash for this lecture using name, timestamp, and URI
+        bytes32 lectureHash = keccak256(abi.encodePacked(name, timestamp, uri));
+        
+        // Ensure this hash is unique
+        require(_lectureHashToId[lectureHash] == 0, "Lecture with identical parameters already exists");
+        
         _lectures[lectureId] = LectureInfo({
             name: name,
             timestamp: timestamp,
             active: true,
-            tokenURI: uri
+            tokenURI: uri,
+            lectureHash: lectureHash
         });
+        
+        // Store the hash to ID mapping for QR code resolution
+        _lectureHashToId[lectureHash] = lectureId;
         
         _lectureCount = lectureId;
         
-        emit LectureCreated(lectureId, name, timestamp, uri);
+        emit LectureCreated(lectureId, name, timestamp, uri, lectureHash);
         
+        return lectureId;
+    }
+    
+    /**
+     * @dev Resolves a lecture ID from a hash
+     * @param hash The lecture hash
+     * @return The lecture ID
+     */
+    function lectureHashToId(bytes32 hash) external view returns (uint256) {
+        uint256 lectureId = _lectureHashToId[hash];
+        require(lectureId > 0, "Lecture hash not found");
         return lectureId;
     }
     
@@ -155,6 +181,20 @@ contract KoPOAP is ERC1155, AccessControl, Pausable {
         require(lectureId <= _lectureCount && lectureId > 0, "Invalid lecture ID");
         LectureInfo memory info = _lectures[lectureId];
         return (info.name, info.timestamp, info.active, info.tokenURI);
+    }
+    
+    /**
+     * @dev Get full lecture information including hash
+     * @param lectureId ID of the lecture
+     */
+    function getLectureWithHash(uint256 lectureId)
+        external
+        view
+        returns (string memory name, uint256 timestamp, bool active, string memory tokenURI, bytes32 lectureHash)
+    {
+        require(lectureId <= _lectureCount && lectureId > 0, "Invalid lecture ID");
+        LectureInfo memory info = _lectures[lectureId];
+        return (info.name, info.timestamp, info.active, info.tokenURI, info.lectureHash);
     }
 
     /**

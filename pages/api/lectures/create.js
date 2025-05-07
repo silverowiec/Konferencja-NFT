@@ -38,19 +38,20 @@ export default async function handler(req, res) {
       });
     }
 
-    // Create lecture using blockchain library
-    const lectureId = await createLecture(
+    // Create lecture using blockchain library - now returns both id and hash
+    const { id: lectureId, hash: lectureHash } = await createLecture(
       adminPrivateKey,
       name,
       timestamp,
       tokenURI
     );
 
-    // Return success response with lecture ID
+    // Return success response with lecture ID and hash
     return res.status(200).json({
       success: true,
       message: 'Lecture created successfully',
-      lectureId
+      lectureId,
+      lectureHash
     });
 
   } catch (error) {
