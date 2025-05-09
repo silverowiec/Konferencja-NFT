@@ -1,20 +1,23 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
-import { KoPOAP } from "../typechain-types";
+import type { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
+import type { KoPOAP } from "../typechain-types";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
+import { encodePacked } from "viem";
 
 // Extract role constants
 const PAUSER_ROLE = ethers.keccak256(ethers.toUtf8Bytes("PAUSER_ROLE"));
 const MINTER_ROLE = ethers.keccak256(ethers.toUtf8Bytes("MINTER_ROLE"));
+const DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
-describe("KoPOAP", function () {
+describe("KoPOAP", () => {
     let poap: KoPOAP;
     let owner: SignerWithAddress;
-    let pauser: SignerWithAddress;
-    let minter: SignerWithAddress;
     let attendees: SignerWithAddress[];
-    const baseURI = "ipfs://base-uri/";
+    let lectureName: string;
+    let deadline: bigint;
+    let tokenURI: string;
+    let lectureHash: string;
 
     // Fixture for deploying the contract before each test
     async function deployPoapFixture() {
@@ -22,390 +25,380 @@ describe("KoPOAP", function () {
 
         const KoPOAP = await ethers.getContractFactory("KoPOAP");
         const poap = await KoPOAP.deploy(
-            baseURI,
+            "KoPOAP", // name
+            "KPOAP", // symbol
             owner.address,
-            pauser.address,
-            minter.address
+            owner.address,
+            owner.address
         );
 
         return { poap, owner, pauser, minter, attendees };
     }
 
-    beforeEach(async function () {
-        ({ poap, owner, pauser, minter, attendees } = await deployPoapFixture());
+    beforeEach(async () => {
+        ({ poap, owner, attendees } = await deployPoapFixture());
+        
+        // Setup for lecture creation
+        lectureName = "Test Lecture";
+        deadline = BigInt(await time.latest()) + BigInt(86400); // 1 day from now
+        tokenURI = "ipfs://test-uri/";
+        
+        // Calculate the expected lecture hash
+        lectureHash = ethers.keccak256(
+            encodePacked(
+                ["string", "uint256", "string"],
+                [lectureName, deadline, tokenURI]
+            )
+        );
     });
 
-    describe("Deployment", function () {
-        it("Should set the correct roles", async function () {
-            expect(await poap.hasRole(await poap.DEFAULT_ADMIN_ROLE(), owner.address)).to.be.true;
-            expect(await poap.hasRole(PAUSER_ROLE, pauser.address)).to.be.true;
-            expect(await poap.hasRole(MINTER_ROLE, minter.address)).to.be.true;
-        });
-
-        it("Should set the base URI", async function () {
-            const id = 1;
-            const lectureURI = "";
-
-            // Create a lecture with empty URI to test baseURI fallback
-            await poap.connect(minter).createLecture("Test Lecture", await time.latest(), lectureURI);
-
-            // Mint POAP
-            await poap.connect(minter).mintPOAP(id, attendees[0].address);
-
-            // Check that it falls back to baseURI
-            expect(await poap.uri(id)).to.equal(baseURI);
+    describe("Deployment", () => {
+        it("Should set the correct roles", async () => {
+            expect(await poap.hasRole(DEFAULT_ADMIN_ROLE, owner.address)).to.be.true;
+            expect(await poap.hasRole(PAUSER_ROLE, owner.address)).to.be.true;
+            expect(await poap.hasRole(MINTER_ROLE, owner.address)).to.be.true;
         });
     });
 
-    describe("Lecture Creation", function () {
-        it("Should allow minter to create a lecture", async function () {
-            const timestamp = await time.latest();
-            const lectureURI = "ipfs://lecture-uri/";
+    describe("Lecture Creation", () => {
+        it("Should allow minter to create a lecture", async () => {
+            const tx = await poap.connect(owner).createLecture(lectureName, deadline, tokenURI);
 
-            const tx = await poap.connect(minter).createLecture("Blockchain Basics", timestamp, lectureURI);
+            // Check lecture was created and added to counter
+            expect(await poap.getLectureCount()).to.equal(1);
 
-            // Check lecture was created with ID 1
-            const lectureId = 1;
-            expect(await poap.getLectureCount()).to.equal(lectureId);
-
-            // Verify event was emitted
+            // Verify event was emitted with correct hash
             await expect(tx)
                 .to.emit(poap, "LectureCreated")
-                .withArgs(lectureId, "Blockchain Basics", timestamp, lectureURI);
-
-            // Check lecture details
-            const lecture = await poap.getLecture(lectureId);
-            expect(lecture.name).to.equal("Blockchain Basics");
-            expect(lecture.timestamp).to.equal(timestamp);
-            expect(lecture.active).to.be.true;
-            expect(lecture.tokenURI).to.equal(lectureURI);
+                .withArgs(lectureHash, lectureName, deadline, tokenURI);
         });
 
-        it("Should revert if non-minter tries to create a lecture", async function () {
+        it("Should revert if non-minter tries to create a lecture", async () => {
             await expect(
-                poap.connect(attendees[0]).createLecture("Unauthorized", await time.latest(), "uri")
+                poap.connect(attendees[0]).createLecture("Unauthorized", deadline, "uri")
             ).to.be.revertedWithCustomError(poap, "AccessControlUnauthorizedAccount");
         });
 
-        it("Should revert lecture creation when paused", async function () {
-            await poap.connect(pauser).pause();
+        it("Should revert lecture creation when paused", async () => {
+            await poap.connect(owner).pause();
 
             await expect(
-                poap.connect(minter).createLecture("While Paused", await time.latest(), "uri")
+                poap.connect(owner).createLecture("While Paused", deadline, "uri")
             ).to.be.revertedWithCustomError(poap, "EnforcedPause");
+        });
+        
+        it("Should revert if lecture already exists", async () => {
+            // Create a lecture first
+            await poap.connect(owner).createLecture(lectureName, deadline, tokenURI);
+            
+            // Try to create the same lecture again
+            await expect(
+                poap.connect(owner).createLecture(lectureName, deadline, tokenURI)
+            ).to.be.revertedWith("Lecture already exists");
         });
     });
 
-    describe("Minting POAPs", function () {
-        let lectureId: number;
-
-        beforeEach(async function () {
+    describe("Minting POAPs", () => {
+        beforeEach(async () => {
             // Create a lecture for tests
-            await poap.connect(minter).createLecture("Test Lecture", await time.latest(), "test-uri");
-            lectureId = 1;
+            await poap.connect(owner).createLecture(lectureName, deadline, tokenURI);
         });
 
-        it("Should allow minter to mint a POAP", async function () {
+        it("Should allow owner to mint a POAP", async () => {
             const attendee = attendees[0];
-
-            await expect(poap.connect(minter).mintPOAP(lectureId, attendee.address))
+            
+            // Mint and get the token ID
+            const tx = await poap.connect(owner).mintPOAP(lectureHash, attendee.address);
+            const receipt = await tx.wait();
+            
+            // Find the POAPClaimed event to get the tokenId
+            const event = receipt?.logs.find(
+                log => log.topics[0] === ethers.id('POAPClaimed(bytes32,address,uint256)')
+            );
+            if (!event) {
+                throw new Error("POAPClaimed event not found");
+            }
+            const parsedEvent = poap.interface.parseLog(event);
+            if (!parsedEvent) {
+                throw new Error("Failed to parse event");
+            }
+            const tokenId = parsedEvent.args[2];
+            
+            // Verify event was emitted
+            await expect(tx)
                 .to.emit(poap, "POAPClaimed")
-                .withArgs(lectureId, attendee.address);
-
-            // Check token balance and claimed status
-            expect(await poap.balanceOf(attendee.address, lectureId)).to.equal(1);
-            expect(await poap.hasClaimed(lectureId, attendee.address)).to.be.true;
+                .withArgs(lectureHash, attendee.address, tokenId);
+            
+            // Check claimed status
+            expect(await poap.hasClaimed(lectureHash, attendee.address)).to.be.true;
+            
+            // Check token is in owner's tokens list
+            const ownerTokens = await poap.getTokensOfOwner(attendee.address);
+            expect(ownerTokens).to.include(tokenId);
         });
 
-        it("Should revert minting for invalid lecture ID", async function () {
-            const invalidId = 999;
+        it("Should revert minting for invalid lecture hash", async () => {
+            const invalidHash = ethers.keccak256(ethers.toUtf8Bytes("invalid"));
 
             await expect(
-                poap.connect(minter).mintPOAP(invalidId, attendees[0].address)
+                poap.connect(owner).mintPOAP(invalidHash, attendees[0].address)
             ).to.be.revertedWith("Invalid lecture ID");
         });
 
-        it("Should revert minting if lecture is inactive", async function () {
-            // Deactivate the lecture
-            await poap.connect(minter).setLectureActive(lectureId, false);
-
+        it("Should revert minting if deadline passed", async () => {
+            // Create a lecture with past deadline
+            const pastDeadline = BigInt(await time.latest()) - BigInt(1);
+            const pastLectureName = "Past Lecture";
+            const pastLectureURI = "past-uri";
+            
+            const pastLectureHash = ethers.keccak256(
+                encodePacked(
+                    ["string", "uint256", "string"],
+                    [pastLectureName, pastDeadline, pastLectureURI]
+                )
+            );
+            
+            await poap.connect(owner).createLecture(pastLectureName, pastDeadline, pastLectureURI);
+            
+            // Try to mint
             await expect(
-                poap.connect(minter).mintPOAP(lectureId, attendees[0].address)
+                poap.connect(owner).mintPOAP(pastLectureHash, attendees[0].address)
             ).to.be.revertedWith("Lecture is not active");
         });
 
-        it("Should revert minting if already claimed", async function () {
+        it("Should revert minting if already claimed", async () => {
             const attendee = attendees[0];
 
             // Mint once
-            await poap.connect(minter).mintPOAP(lectureId, attendee.address);
+            await poap.connect(owner).mintPOAP(lectureHash, attendee.address);
 
             // Try to mint again
             await expect(
-                poap.connect(minter).mintPOAP(lectureId, attendee.address)
+                poap.connect(owner).mintPOAP(lectureHash, attendee.address)
             ).to.be.revertedWith("POAP already claimed");
         });
 
-        it("Should revert if non-minter tries to mint", async function () {
+        it("Should revert if non-owner tries to mint", async () => {
             await expect(
-                poap.connect(attendees[0]).mintPOAP(lectureId, attendees[1].address)
+                poap.connect(attendees[0]).mintPOAP(lectureHash, attendees[1].address)
             ).to.be.revertedWithCustomError(poap, "AccessControlUnauthorizedAccount");
         });
 
-        it("Should revert minting when paused", async function () {
-            await poap.connect(pauser).pause();
+        it("Should revert minting when paused", async () => {
+            await poap.connect(owner).pause();
 
             await expect(
-                poap.connect(minter).mintPOAP(lectureId, attendees[0].address)
+                poap.connect(owner).mintPOAP(lectureHash, attendees[0].address)
             ).to.be.revertedWithCustomError(poap, "EnforcedPause");
         });
     });
 
-    describe("Batch Minting POAPs", function () {
-        let lectureId: number;
-
-        beforeEach(async function () {
-            await poap.connect(minter).createLecture("Conference Keynote", await time.latest(), "keynote-uri");
-            lectureId = 1;
+    describe("Batch Minting POAPs", () => {
+        beforeEach(async () => {
+            await poap.connect(owner).createLecture(lectureName, deadline, tokenURI);
         });
 
-        it("Should mint POAPs to multiple attendees", async function () {
+        it("Should mint POAPs to multiple attendees", async () => {
             const batchAttendees = attendees.slice(0, 3).map(a => a.address);
 
-            await poap.connect(minter).batchMintPOAP(lectureId, batchAttendees);
+            await poap.connect(owner).batchMintPOAP(lectureHash, batchAttendees);
 
-            // Check balances and claimed status for all attendees
+            // Check claimed status for all attendees
             for (let i = 0; i < batchAttendees.length; i++) {
-                expect(await poap.balanceOf(batchAttendees[i], lectureId)).to.equal(1);
-                expect(await poap.hasClaimed(lectureId, batchAttendees[i])).to.be.true;
+                expect(await poap.hasClaimed(lectureHash, batchAttendees[i])).to.be.true;
             }
         });
 
-        it("Should skip already claimed POAPs in batch mint", async function () {
+        it("Should skip already claimed POAPs in batch mint", async () => {
             // Pre-mint to first attendee
-            await poap.connect(minter).mintPOAP(lectureId, attendees[0].address);
+            const firstMintTx = await poap.connect(owner).mintPOAP(lectureHash, attendees[0].address);
+            const firstReceipt = await firstMintTx.wait();
+            
+            // Get first token ID
+            let firstTokenId;
+            for (const log of firstReceipt.logs) {
+                try {
+                    const parsedLog = poap.interface.parseLog({
+                        topics: log.topics as string[],
+                        data: log.data
+                    });
+                    if (parsedLog && parsedLog.name === 'POAPClaimed') {
+                        firstTokenId = parsedLog.args[2];
+                        break;
+                    }
+                } catch (e) {
+                    // Skip logs that can't be parsed
+                }
+            }
 
             // Batch mint including the first attendee again
             const batchAttendees = attendees.slice(0, 3).map(a => a.address);
-            await poap.connect(minter).batchMintPOAP(lectureId, batchAttendees);
+            await poap.connect(owner).batchMintPOAP(lectureHash, batchAttendees);
 
             // Verify all have claimed
             for (let i = 0; i < batchAttendees.length; i++) {
-                expect(await poap.hasClaimed(lectureId, batchAttendees[i])).to.be.true;
+                expect(await poap.hasClaimed(lectureHash, batchAttendees[i])).to.be.true;
             }
-
-            // First attendee should still only have 1 token
-            expect(await poap.balanceOf(attendees[0].address, lectureId)).to.equal(1);
         });
 
-        it("Should revert batch minting for invalid lecture ID", async function () {
-            const invalidId = 999;
+        it("Should revert batch minting for invalid lecture hash", async () => {
+            const invalidHash = ethers.keccak256(ethers.toUtf8Bytes("invalid"));
 
             await expect(
-                poap.connect(minter).batchMintPOAP(invalidId, [attendees[0].address])
-            ).to.be.revertedWith("Invalid lecture ID");
+                poap.connect(owner).batchMintPOAP(invalidHash, [attendees[0].address])
+            ).to.be.revertedWith("Lecture is not active or invalid");
         });
 
-        it("Should revert batch minting if lecture is inactive", async function () {
-            await poap.connect(minter).setLectureActive(lectureId, false);
+        it("Should revert batch minting if deadline passed", async () => {
+            // Create a lecture with past deadline
+            const pastDeadline = BigInt(await time.latest()) - BigInt(1);
+            const pastLectureName = "Past Lecture";
+            const pastLectureURI = "past-uri";
+            
+            const pastLectureHash = ethers.keccak256(
+                ethers.AbiCoder.defaultAbiCoder().encode(
+                    ["string", "uint256", "string"],
+                    [pastLectureName, pastDeadline, pastLectureURI]
+                )
+            );
+            
+            await poap.connect(owner).createLecture(pastLectureName, pastDeadline, pastLectureURI);
 
             await expect(
-                poap.connect(minter).batchMintPOAP(lectureId, [attendees[0].address])
-            ).to.be.revertedWith("Lecture is not active");
+                poap.connect(owner).batchMintPOAP(pastLectureHash, [attendees[0].address])
+            ).to.be.revertedWith("Lecture is not active or invalid");
         });
 
-        it("Should handle empty array of attendees", async function () {
-            await poap.connect(minter).batchMintPOAP(lectureId, []);
+        it("Should handle empty array of attendees", async () => {
+            await poap.connect(owner).batchMintPOAP(lectureHash, []);
             // Should complete without errors
         });
 
-        it("Should revert if non-minter tries to batch mint", async function () {
+        it("Should revert if non-owner tries to batch mint", async () => {
             await expect(
-                poap.connect(attendees[0]).batchMintPOAP(lectureId, [attendees[1].address])
+                poap.connect(attendees[0]).batchMintPOAP(lectureHash, [attendees[1].address])
             ).to.be.revertedWithCustomError(poap, "AccessControlUnauthorizedAccount");
         });
 
-        it("Should revert batch minting when paused", async function () {
-            await poap.connect(pauser).pause();
+        it("Should revert batch minting when paused", async () => {
+            await poap.connect(owner).pause();
 
             await expect(
-                poap.connect(minter).batchMintPOAP(lectureId, [attendees[0].address])
+                poap.connect(owner).batchMintPOAP(lectureHash, [attendees[0].address])
             ).to.be.revertedWithCustomError(poap, "EnforcedPause");
         });
     });
 
-    describe("Lecture Management", function () {
-        let lectureId: number;
+    describe("Token URI", () => {
+        let firstTokenId: bigint;
 
-        beforeEach(async function () {
-            await poap.connect(minter).createLecture("Workshop", await time.latest(), "workshop-uri");
-            lectureId = 1;
+        beforeEach(async () => {
+            // Create a lecture
+            await poap.connect(owner).createLecture(lectureName, deadline, tokenURI);
+            
+            // Mint a token to test URI
+            const tx = await poap.connect(owner).mintPOAP(lectureHash, attendees[0].address);
+            const receipt = await tx.wait();
+            
+            // Find the POAPClaimed event to get the tokenId
+            for (const log of receipt!.logs) {
+                try {
+                    const parsedLog = poap.interface.parseLog({
+                        topics: log.topics as string[],
+                        data: log.data
+                    });
+                    if (parsedLog && parsedLog.name === 'POAPClaimed') {
+                        firstTokenId = parsedLog.args[2];
+                        break;
+                    }
+                } catch (e) {
+                    console.error("Failed to parse log:", e);
+                    // Skip logs that can't be parsed
+                }
+            }
         });
 
-        it("Should allow minter to set lecture active status", async function () {
-            // Deactivate the lecture
-            await poap.connect(minter).setLectureActive(lectureId, false);
-
-            // Verify it's inactive
-            const lecture = await poap.getLecture(lectureId);
-            expect(lecture.active).to.be.false;
-
-            // Reactivate the lecture
-            await poap.connect(minter).setLectureActive(lectureId, true);
-
-            // Verify it's active again
-            const updatedLecture = await poap.getLecture(lectureId);
-            expect(updatedLecture.active).to.be.true;
-        });
-
-        it("Should revert setting active status for invalid lecture ID", async function () {
-            const invalidId = 999;
-
-            await expect(
-                poap.connect(minter).setLectureActive(invalidId, false)
-            ).to.be.revertedWith("Invalid lecture ID");
-        });
-
-        it("Should revert if non-minter tries to change lecture status", async function () {
-            await expect(
-                poap.connect(attendees[0]).setLectureActive(lectureId, false)
-            ).to.be.revertedWithCustomError(poap, "AccessControlUnauthorizedAccount");
+        it("Should return correct token URI", async () => {
+            expect(await poap.tokenURI(firstTokenId)).to.equal(tokenURI);
         });
     });
-
-    describe("Lecture Queries", function () {
-        let lectureId: number;
-
-        beforeEach(async function () {
-            const timestamp = await time.latest();
-            await poap.connect(minter).createLecture("Seminar", timestamp, "seminar-uri");
-            lectureId = 1;
+    
+    describe("Lecture Queries", () => {
+        beforeEach(async () => {
+            await poap.connect(owner).createLecture(lectureName, deadline, tokenURI);
         });
 
-        it("Should return correct lecture information", async function () {
-            const lecture = await poap.getLecture(lectureId);
-
-            expect(lecture.name).to.equal("Seminar");
-            expect(lecture.active).to.be.true;
-            expect(lecture.tokenURI).to.equal("seminar-uri");
-        });
-
-        it("Should return correct lecture count", async function () {
+        it("Should return correct lecture count", async () => {
             expect(await poap.getLectureCount()).to.equal(1);
 
             // Add another lecture
-            await poap.connect(minter).createLecture("Another Lecture", await time.latest(), "uri2");
+            await poap.connect(owner).createLecture("Another Lecture", deadline, "uri2");
 
             expect(await poap.getLectureCount()).to.equal(2);
+            expect((await poap.getLecture(0))[0]).to.equal(lectureHash);
         });
 
-        it("Should revert querying invalid lecture ID", async function () {
-            const invalidId = 999;
-
-            await expect(
-                poap.getLecture(invalidId)
-            ).to.be.revertedWith("Invalid lecture ID");
-        });
-
-        it("Should return correct claimed status", async function () {
+        it("Should return correct claimed status", async () => {
             const attendee = attendees[0];
 
             // Not claimed initially
-            expect(await poap.hasClaimed(lectureId, attendee.address)).to.be.false;
+            expect(await poap.hasClaimed(lectureHash, attendee.address)).to.be.false;
 
             // Mint a POAP
-            await poap.connect(minter).mintPOAP(lectureId, attendee.address);
+            await poap.connect(owner).mintPOAP(lectureHash, attendee.address);
 
             // Should be claimed now
-            expect(await poap.hasClaimed(lectureId, attendee.address)).to.be.true;
+            expect(await poap.hasClaimed(lectureHash, attendee.address)).to.be.true;
         });
     });
 
-    describe("URI Handling", function () {
-        let lectureId: number;
-
-        beforeEach(async function () {
-            // Create lecture with specific URI
-            await poap.connect(minter).createLecture("With URI", await time.latest(), "specific-uri");
-            lectureId = 1;
-
-            // Create lecture with empty URI
-            await poap.connect(minter).createLecture("No URI", await time.latest(), "");
-        });
-
-        it("Should return specific URI when set", async function () {
-            expect(await poap.uri(lectureId)).to.equal("specific-uri");
-        });
-
-        it("Should fall back to base URI when token URI is empty", async function () {
-            const emptyURILectureId = 2;
-            expect(await poap.uri(emptyURILectureId)).to.equal(baseURI);
-        });
-
-        it("Should revert for invalid token ID", async function () {
-            const invalidId = 999;
-
-            await expect(
-                poap.uri(invalidId)
-            ).to.be.revertedWith("Invalid token ID");
-        });
-    });
-
-    describe("Pausing", function () {
-        it("Should allow pauser to pause the contract", async function () {
-            await poap.connect(pauser).pause();
+    describe("Pausing", () => {
+        it("Should allow owner to pause the contract", async () => {
+            await poap.connect(owner).pause();
             expect(await poap.paused()).to.be.true;
         });
 
-        it("Should allow pauser to unpause the contract", async function () {
-            await poap.connect(pauser).pause();
-            await poap.connect(pauser).unpause();
+        it("Should allow owner to unpause the contract", async () => {
+            await poap.connect(owner).pause();
+            await poap.connect(owner).unpause();
             expect(await poap.paused()).to.be.false;
         });
 
-        it("Should revert if non-pauser tries to pause", async function () {
+        it("Should revert if non-owner tries to pause", async () => {
             await expect(
                 poap.connect(attendees[0]).pause()
             ).to.be.revertedWithCustomError(poap, "AccessControlUnauthorizedAccount");
         });
 
-        it("Should revert if non-pauser tries to unpause", async function () {
-            await poap.connect(pauser).pause();
+        it("Should revert if non-owner tries to unpause", async () => {
+            await poap.connect(owner).pause();
 
             await expect(
                 poap.connect(attendees[0]).unpause()
             ).to.be.revertedWithCustomError(poap, "AccessControlUnauthorizedAccount");
         });
 
-        it("Should prevent token transfers when paused", async function () {
-            // Setup: create lecture and mint token
-            const lectureId = 1;
-            await poap.connect(minter).createLecture("Test", await time.latest(), "uri");
-            await poap.connect(minter).mintPOAP(lectureId, attendees[0].address);
-
+        it("Should prevent minting when paused", async () => {
+            // Create a lecture
+            await poap.connect(owner).createLecture(lectureName, deadline, tokenURI);
+            
             // Pause contract
-            await poap.connect(pauser).pause();
+            await poap.connect(owner).pause();
 
-            // Attempt transfer
+            // Try to mint POAP
             await expect(
-                poap.connect(attendees[0]).safeTransferFrom(
-                    attendees[0].address,
-                    attendees[1].address,
-                    lectureId,
-                    1,
-                    "0x"
-                )
-            ).to.be.revertedWithCustomError(poap, "NotAllowed");
+                poap.connect(owner).mintPOAP(lectureHash, attendees[0].address)
+            ).to.be.revertedWithCustomError(poap, "EnforcedPause");
         });
     });
 
-    describe("Interface Support", function () {
-        it("Should support ERC1155 interface", async function () {
-            const ERC1155InterfaceId = "0xd9b67a26";
-            expect(await poap.supportsInterface(ERC1155InterfaceId)).to.be.true;
+    describe("Interface Support", () => {
+        it("Should support ERC721 interface", async () => {
+            const ERC721InterfaceId = "0x80ac58cd";
+            expect(await poap.supportsInterface(ERC721InterfaceId)).to.be.true;
         });
 
-        it("Should support AccessControl interface", async function () {
+        it("Should support AccessControl interface", async () => {
             const AccessControlInterfaceId = "0x7965db0b";
             expect(await poap.supportsInterface(AccessControlInterfaceId)).to.be.true;
         });

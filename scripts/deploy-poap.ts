@@ -1,6 +1,4 @@
 import { ethers } from "hardhat";
-import fs from "fs";
-import path from "path";
 
 async function main() {
   try {
@@ -16,15 +14,18 @@ async function main() {
 
     // Deploy the KoPOAP contract
     // Parameters for constructor:
-    // 1. base URI for metadata (can be updated later)
-    // 2. defaultAdmin - the deployer address will have admin role
-    // 3. pauser - the deployer address will have pauser role
-    // 4. minter - the deployer address will have minter role
-    const baseURI = "ipfs://"; // This can be customized or left as a placeholder
+    // 1. Name of the token
+    // 2. Symbol of the token
+    // 3. defaultAdmin - the deployer address will have admin role
+    // 4. pauser - the deployer address will have pauser role
+    // 5. minter - the deployer address will have minter role
+    const name = "KoPOAP";
+    const symbol = "KPOAP";
     
     const KoPOAP = await ethers.getContractFactory("KoPOAP");
     const poap = await KoPOAP.deploy(
-      baseURI,
+      name,
+      symbol,
       deployer.address, // Admin role
       deployer.address, // Pauser role
       deployer.address  // Minter role
