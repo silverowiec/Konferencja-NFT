@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getAllLectures } from '../../lib/blockchain';
+import { getAllLectures, getLectureHashFromId } from '../../lib/blockchain';
 import { generateQRCode } from '../../lib/qrcode';
 
 export default function LectureList({ refresh }) {
@@ -33,28 +33,37 @@ export default function LectureList({ refresh }) {
     return new Date(Number(timestamp) * 1000).toLocaleString();
   };
 
-  // Generate QR code for a lecture
-  const handleGenerateQR = async (lectureId) => {
+  // Generate QR code for a lecture using its hash
+  const handleGenerateQR = async (lectureId, lectureHash) => {
     try {
+      if (!lectureHash) {
+        throw new Error('Lecture hash is required for QR code generation');
+      }
+      
       // Base URL - in production this should be your domain
       const baseUrl = window.location.origin;
-      const { dataUrl } = await generateQRCode(lectureId, baseUrl);
+      const { dataUrl } = await generateQRCode(lectureHash, baseUrl);
       
+      // Still index by lecture ID for the UI, but use hash for QR generation
       setQrCodes(prevQrCodes => ({
         ...prevQrCodes,
         [lectureId]: dataUrl
       }));
     } catch (err) {
       console.error('Error generating QR code:', err);
-      alert('Failed to generate QR code');
+      alert('Failed to generate QR code: ' + err.message);
     }
   };
 
   // Download QR code as image
-  const handleDownloadQR = (lectureId, lectureName) => {
+  const handleDownloadQR = (lectureId, lectureName, lectureHash) => {
     const link = document.createElement('a');
     link.href = qrCodes[lectureId];
-    link.download = `qr-lecture-${lectureId}-${lectureName.replace(/\s+/g, '-').toLowerCase()}.png`;
+    // Include a truncated hash in the filename for better identification
+    const shortHash = lectureHash ? 
+      `${lectureHash.slice(0, 6)}${lectureHash.slice(-4)}` : 
+      lectureId;
+    link.download = `qr-lecture-${shortHash}-${lectureName.replace(/\s+/g, '-').toLowerCase()}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -75,12 +84,21 @@ export default function LectureList({ refresh }) {
         <div key={lecture.id} className="card">
           <h3>{lecture.name}</h3>
           <p>Lecture ID: {lecture.id}</p>
+          {lecture.hash && (
+            <p>
+              <small>Hash: {lecture.hash.slice(0, 10)}...{lecture.hash.slice(-8)}</small>
+            </p>
+          )}
           <p>Date: {formatDate(lecture.timestamp)}</p>
-          <p>Status: {lecture.active ? 'Active' : 'Inactive'}</p>
+          <p>Status: {Number.parseInt(lecture.timestamp) > Math.floor(Date.now() / 1000) ? 'Active' : 'Inactive'}</p>
           <p>Token URI: {lecture.tokenURI}</p>
           
           <div style={{ marginTop: '15px' }}>
-            <button onClick={() => handleGenerateQR(lecture.id)}>
+            <button 
+              type="button" 
+              onClick={() => handleGenerateQR(lecture.id, lecture.hash || lecture.lectureHash)}
+              disabled={!lecture.hash && !lecture.lectureHash}
+            >
               Generate QR Code
             </button>
             
@@ -93,15 +111,16 @@ export default function LectureList({ refresh }) {
                 />
                 <p>
                   <button 
+                    type="button"
                     className="btn-secondary"
                     style={{ marginTop: '10px' }}
-                    onClick={() => handleDownloadQR(lecture.id, lecture.name)}
+                    onClick={() => handleDownloadQR(lecture.id, lecture.name, lecture.hash || lecture.lectureHash)}
                   >
                     Download QR Code
                   </button>
                 </p>
                 <p style={{ marginTop: '10px', fontSize: '0.9rem' }}>
-                  Attendee link: {window.location.origin}/attend/{lecture.id}
+                  Attendee link: {window.location.origin}/attend/{lecture.hash || lecture.lectureHash || lecture.id}
                 </p>
               </div>
             )}

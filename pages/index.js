@@ -47,7 +47,22 @@ export default function Home() {
         {!isLoggedIn && (
           <div className="card">
             <h2>Lecture Attendance Verification</h2>
-            <p>
+            
+            <div className="scan-qr-button">
+              <Link href="/scan">
+                <button type="button" className="btn-primary">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" style={{ marginRight: '10px' }}>
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                  </svg>
+                  Scan QR Code
+                </button>
+              </Link>
+            </div>
+            
+            <p style={{ marginTop: '20px' }}>
               This application allows you to claim a Proof of Attendance Protocol (POAP) 
               NFT for lectures you've attended.
             </p>
@@ -64,9 +79,37 @@ export default function Home() {
             </p>
             <div style={{ marginTop: '20px' }}>
               <Link href="/admin">
-                <button>Admin Login</button>
+                <button type="button" className="btn-secondary">Admin Login</button>
               </Link>
             </div>
+
+            <style jsx>{`
+              .scan-qr-button {
+                margin: 30px 0;
+                text-align: center;
+              }
+              
+              .scan-qr-button button {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-color: #0070f3;
+                color: white;
+                border: none;
+                padding: 15px 30px;
+                font-size: 18px;
+                border-radius: 8px;
+                cursor: pointer;
+                box-shadow: 0 4px 14px rgba(0, 112, 243, 0.4);
+                transition: all 0.2s ease;
+              }
+              
+              .scan-qr-button button:hover {
+                background-color: #0051a8;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(0, 112, 243, 0.5);
+              }
+            `}</style>
           </div>
         )}
         
@@ -97,7 +140,7 @@ export default function Home() {
             
             <div style={{ marginTop: '20px' }}>
               <Link href="/admin">
-                <button>Go to Admin Dashboard</button>
+                <button type="button" className="btn-primary">Go to Admin Dashboard</button>
               </Link>
             </div>
           </>

@@ -39,18 +39,24 @@ export default async function handler(req, res) {
     }
 
     // Create lecture using blockchain library
-    const lectureId = await createLecture(
+    const lectureHash = await createLecture(
       adminPrivateKey,
       name,
       timestamp,
       tokenURI
     );
 
-    // Return success response with lecture ID
+    // Get the lecture count to determine the ID (1-based for backwards compatibility)
+    const { getLectureCount } = await import('../../../lib/blockchain');
+    const count = await getLectureCount();
+    const lectureId = count; // The new lecture is the latest one
+
+    // Return success response with lecture ID and hash
     return res.status(200).json({
       success: true,
       message: 'Lecture created successfully',
-      lectureId
+      lectureId,
+      lectureHash
     });
 
   } catch (error) {

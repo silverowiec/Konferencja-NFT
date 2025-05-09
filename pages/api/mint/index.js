@@ -42,8 +42,9 @@ export default async function handler(req, res) {
       return res.status(404).json({ message: 'Lecture not found' });
     }
 
-    if (!lecture.active) {
-      return res.status(400).json({ message: 'Lecture is not active' });
+    const currentTime = Math.floor(Date.now() / 1000);
+    if (lecture.timestamp < currentTime) {
+      return res.status(400).json({ message: 'Lecture deadline has passed' });
     }
 
     // Check if attendee has already claimed

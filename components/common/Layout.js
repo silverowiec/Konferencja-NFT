@@ -22,10 +22,23 @@ export default function Layout({ children, title = 'POAP Lecture App' }) {
 
       <header>
         <nav className="container" style={{ display: 'flex', justifyContent: 'space-between', padding: '20px 0' }}>
-          <Link href="/">
-            <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>Lecture POAP App</span>
-          </Link>
+          <div className="logo">
+            <Link href="/">
+              <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>Lecture POAP App</span>
+            </Link>
+          </div>
           <div>
+            {/* QR Scanner link for all users */}
+            <Link href="/scan" style={{ marginRight: '20px', display: 'inline-flex', alignItems: 'center' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ marginRight: '5px' }} stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+              <span>Scan QR Code</span>
+            </Link>
+            
             {/* Show admin panel link only for logged-in users */}
             {isLoggedIn && (
               <Link href="/admin" style={{ marginRight: '20px' }}>
@@ -46,6 +59,7 @@ export default function Layout({ children, title = 'POAP Lecture App' }) {
                 </span>
                 <button 
                   onClick={logout}
+                  type="button"
                   className="btn-secondary"
                   style={{ fontSize: '0.9rem', padding: '5px 10px' }}
                 >
