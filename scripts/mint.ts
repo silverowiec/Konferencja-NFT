@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { KoPOAP } from "../typechain-types";
+import { encodePacked } from "viem";
 
 async function main() {
     // Change these variables as necessary
@@ -17,7 +17,7 @@ async function main() {
 
     // Calculate lecture hash for the lecture
     const lectureHash = ethers.keccak256(
-        ethers.AbiCoder.defaultAbiCoder().encode(
+        encodePacked(
             ["string", "uint256", "string"],
             [lectureName, deadline, tokenURI]
         )
