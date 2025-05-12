@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { generateQRCode } from '../../lib/qrcode';
 
 export default function LectureForm({ onLectureCreated }) {
   const [name, setName] = useState('');
@@ -8,6 +9,7 @@ export default function LectureForm({ onLectureCreated }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [qrCodeData, setQrCodeData] = useState(null);
 
   // Handle form submission using secure API endpoint
   const handleSubmit = async (e) => {
@@ -15,6 +17,7 @@ export default function LectureForm({ onLectureCreated }) {
     setLoading(true);
     setError('');
     setSuccess('');
+    setQrCodeData(null);
     
     try {
       // Validate inputs
@@ -43,6 +46,12 @@ export default function LectureForm({ onLectureCreated }) {
       
       if (!response.ok) {
         throw new Error(data.message || 'Failed to create lecture');
+      }
+      
+      // Generate QR code using the lecture hash
+      if (data.lectureHash) {
+        const qrCode = await generateQRCode(data.lectureHash, window.location.origin);
+        setQrCodeData(qrCode);
       }
       
       setSuccess(`Lecture created successfully! Lecture ID: ${data.lectureId}`);
@@ -127,6 +136,68 @@ export default function LectureForm({ onLectureCreated }) {
           {loading ? 'Creating...' : 'Create Lecture'}
         </button>
       </form>
+      
+      {qrCodeData && (
+        <div className="qr-code-container">
+          <h3>Lecture QR Code</h3>
+          <p>Share this QR code with attendees to allow them to claim their POAPs.</p>
+          <div className="qr-code">
+            <img src={qrCodeData.dataUrl} alt="Lecture QR Code" />
+          </div>
+          <div className="qr-info">
+            <p>
+              <strong>QR Code URL:</strong> <code>{qrCodeData.scanUrl}</code>
+            </p>
+            <p>Attendees can scan this QR code to claim their POAP for this lecture.</p>
+          </div>
+          <button 
+            onClick={() => {
+              const link = document.createElement('a');
+              link.download = `lecture-qr-code.png`;
+              link.href = qrCodeData.dataUrl;
+              link.click();
+            }}
+            className="btn-secondary"
+          >
+            Download QR Code
+          </button>
+        </div>
+      )}
+      
+      <style jsx>{`
+        .qr-code-container {
+          margin-top: 30px;
+          border-top: 1px solid #ddd;
+          padding-top: 20px;
+          text-align: center;
+        }
+        
+        .qr-code {
+          display: flex;
+          justify-content: center;
+          margin: 20px 0;
+        }
+        
+        .qr-code img {
+          max-width: 200px;
+          border: 1px solid #ddd;
+          padding: 10px;
+          background: white;
+        }
+        
+        .qr-info {
+          margin-bottom: 20px;
+          font-size: 0.9em;
+          color: #555;
+        }
+        
+        .qr-info code {
+          background: #f5f5f5;
+          padding: 2px 5px;
+          border-radius: 3px;
+          font-size: 0.9em;
+        }
+      `}</style>
     </div>
   );
 }

@@ -381,7 +381,7 @@ describe("KoPOAP", () => {
         it("Should prevent minting when paused", async () => {
             // Create a lecture
             await poap.connect(owner).createLecture(lectureName, deadline, tokenURI);
-            
+
             // Pause contract
             await poap.connect(owner).pause();
 
