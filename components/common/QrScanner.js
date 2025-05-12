@@ -23,7 +23,7 @@ const QrScanner = ({ onScan, onError, active = true }) => {
     const initScanner = async () => {
       try {
         // Import the library dynamically
-        const { Html5QrcodeScanner } = await import('html5-qrcode');
+        const Html5QrcodeScanner = (await import('html5-qrcode')).Html5QrcodeScanner;
         
         // Make sure we're not initializing twice
         if (hasInitializedRef.current) {
