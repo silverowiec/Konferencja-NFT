@@ -148,9 +148,6 @@ export default function AttendLecture() {
         throw new Error('MetaMask is not installed');
       }
       
-      alert('wallet address: ' , walletAddress);
-      alert('contract address: ' , contractAddress);
-      
       // Use numeric ID for MetaMask import if available, otherwise use lecture ID
       const tokenIdForMetaMask = await getLastTokenForOwner(walletAddress);
       
