@@ -120,7 +120,6 @@ export default function LectureList({ refresh }) {
                   </button>
                 </p>
                 <p style={{ marginTop: '10px', fontSize: '0.9rem' }}>
-                  Attendee link: {window.location.origin}/attend/{lecture.hash || lecture.lectureHash || lecture.id}
                 </p>
               </div>
             )}
