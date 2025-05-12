@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/common/Layout';
-import { getLecture, getLastTokenForOwner } from '../../lib/blockchain';
+import { getLecture, getLastTokenForOwner, hasClaimed } from '../../lib/blockchain';
 
 export default function AttendLecture() {
   const router = useRouter();
@@ -13,7 +13,7 @@ export default function AttendLecture() {
   const [walletAddress, setWalletAddress] = useState('');
   const [mintStatus, setMintStatus] = useState('idle'); // idle, loading, success, error
   const [mintMessage, setMintMessage] = useState('');
-  const [alreadyClaimed, setAlreadyClaimed] = useState(false);
+  const [alreadyClaimed, setAlreadyClaimed] = useState(0);
   const [walletConnected, setWalletConnected] = useState(false);
   const [contractAddress, setContractAddress] = useState('');
   const [txHash, setTxHash] = useState('');
@@ -85,8 +85,8 @@ export default function AttendLecture() {
             throw new Error(data.message || 'Failed to check claim status');
           }
           
-          setAlreadyClaimed(data.claimed);
-          if (data.claimed) {
+          setAlreadyClaimed(BigInt(data.claimed));
+          if (data.claimed > 0n) {
             setMintStatus('success');
             setMintMessage('You have already claimed this POAP!');
           }
@@ -133,7 +133,7 @@ export default function AttendLecture() {
       
       setMintStatus('success');
       setMintMessage('POAP minted successfully! Check your wallet to view your new POAP.');
-      setAlreadyClaimed(true);
+      setAlreadyClaimed(await hasClaimed(lecture.lectureParam || lectureId, walletAddress));
     } catch (err) {
       console.error('Error minting POAP:', err);
       setMintStatus('error');
@@ -147,17 +147,8 @@ export default function AttendLecture() {
       if (!window.ethereum) {
         throw new Error('MetaMask is not installed');
       }
-      
-      // Use numeric ID for MetaMask import if available, otherwise use lecture ID
-      const tokenIdForMetaMask = await getLastTokenForOwner(walletAddress);
-      
-      console.log('Debug info:', {
-        tokenIdForMetaMask,
-        walletAddress,
-        contractAddress
-      });
-      
-      if (!tokenIdForMetaMask) {
+            
+      if (!alreadyClaimed) {
         alert(`No tokens found for your address: ${walletAddress}`);
         return;
       }
@@ -169,7 +160,7 @@ export default function AttendLecture() {
           type: 'ERC721',
           options: {
             address: contractAddress, // Contract address
-            tokenId: tokenIdForMetaMask.toString(), // Token ID must be a string
+            tokenId: alreadyClaimed.toString(), // Token ID must be a string
           },
         },
       });
@@ -178,6 +169,9 @@ export default function AttendLecture() {
       
     } catch (error) {
       console.error('Error importing token to MetaMask:', error);
+      console.error('Token ID:', alreadyClaimed);
+      console.error('Contract Address:', contractAddress);
+      console.error('Wallet Address:', walletAddress);
       alert(`Failed to import token to MetaMask: ${error.message || 'Unknown error'}`);
     }
   };

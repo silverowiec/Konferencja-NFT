@@ -130,7 +130,7 @@ describe("KoPOAP", () => {
                 .withArgs(lectureHash, attendee.address, tokenId);
             
             // Check claimed status
-            expect(await poap.hasClaimed(lectureHash, attendee.address)).to.be.true;
+            expect(await poap.hasClaimed(lectureHash, attendee.address)).to.be.eq(1n);
             
             // Check token is in owner's tokens list
             const ownerTokens = await poap.getTokensOfOwner(attendee.address);
@@ -205,7 +205,7 @@ describe("KoPOAP", () => {
 
             // Check claimed status for all attendees
             for (let i = 0; i < batchAttendees.length; i++) {
-                expect(await poap.hasClaimed(lectureHash, batchAttendees[i])).to.be.true;
+                expect(await poap.hasClaimed(lectureHash, batchAttendees[i])).to.be.gt(0n);
             }
         });
 
@@ -237,7 +237,7 @@ describe("KoPOAP", () => {
 
             // Verify all have claimed
             for (let i = 0; i < batchAttendees.length; i++) {
-                expect(await poap.hasClaimed(lectureHash, batchAttendees[i])).to.be.true;
+                expect(await poap.hasClaimed(lectureHash, batchAttendees[i])).to.be.gt(0n);
             }
         });
 
@@ -342,13 +342,13 @@ describe("KoPOAP", () => {
             const attendee = attendees[0];
 
             // Not claimed initially
-            expect(await poap.hasClaimed(lectureHash, attendee.address)).to.be.false;
+            expect(await poap.hasClaimed(lectureHash, attendee.address)).to.be.equal(0n);
 
             // Mint a POAP
             await poap.connect(owner).mintPOAP(lectureHash, attendee.address);
 
             // Should be claimed now
-            expect(await poap.hasClaimed(lectureHash, attendee.address)).to.be.true;
+            expect(await poap.hasClaimed(lectureHash, attendee.address)).to.be.equal(1n);
         });
     });
 

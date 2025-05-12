@@ -15,7 +15,7 @@ contract KoPOAP is ERC721, AccessControl, Pausable {
     mapping(bytes32 => LectureInfo) private _lectures;
     
     // Mapping to track which addresses have claimed which lecture POAPs
-    mapping(bytes32 => mapping(address => bool)) private _claimed;
+    mapping(bytes32 => mapping(address => uint256)) private _claimed;
 
     // Mapping from token ID to lecture hash
     mapping(uint256 => bytes32) private _tokenToLectureHash;
@@ -29,15 +29,11 @@ contract KoPOAP is ERC721, AccessControl, Pausable {
     // Lecture ID counter
     bytes32[] public lectureCounter;
     
-    // Mapping from lecture hash to lecture ID for QR code verification
-    mapping(bytes32 => uint256) private _lectureHashToId;
-    
     struct LectureInfo {
         bytes32 lectureHash;
         string name;
         uint256 deadline;
         string tokenURI;
-        bytes32 lectureHash;
     }
     
     event LectureCreated(bytes32 indexed lectureHash, string name, uint256 deadline, string tokenURI);
@@ -85,17 +81,6 @@ contract KoPOAP is ERC721, AccessControl, Pausable {
     
     
     /**
-     * @dev Resolves a lecture ID from a hash
-     * @param hash The lecture hash
-     * @return The lecture ID
-     */
-    function lectureHashToId(bytes32 hash) external view returns (uint256) {
-        uint256 lectureId = _lectureHashToId[hash];
-        require(lectureId > 0, "Lecture hash not found");
-        return lectureId;
-    }
-    
-    /**
      * @dev Admin mints POAP to attendee
      * @param lectureHash Hash of the lecture
      * @param attendee Address of the attendee
@@ -109,14 +94,15 @@ contract KoPOAP is ERC721, AccessControl, Pausable {
     {
         require(_lectures[lectureHash].lectureHash != bytes32(0), "Invalid lecture ID");
         require(block.timestamp <= _lectures[lectureHash].deadline, "Lecture is not active");
-        require(!_claimed[lectureHash][attendee], "POAP already claimed");
+        require(_claimed[lectureHash][attendee] == 0, "POAP already claimed");
         
-        _claimed[lectureHash][attendee] = true;
         
         // Increment token ID counter
         _tokenIdCounter++;
         uint256 tokenId = _tokenIdCounter;
         
+        _claimed[lectureHash][attendee] = tokenId;
+
         // Mint the token
         _mint(attendee, tokenId);
         _tokenToLectureHash[tokenId] = lectureHash;
@@ -142,7 +128,7 @@ contract KoPOAP is ERC721, AccessControl, Pausable {
         require(block.timestamp <= _lectures[lectureHash].deadline, "Lecture is not active or invalid");
         
         for (uint256 i = 0; i < attendees.length; i++) {
-            if (!_claimed[lectureHash][attendees[i]]) {
+            if (_claimed[lectureHash][attendees[i]] == 0) {
                 mintPOAP(lectureHash, attendees[i]);
             }
         }
@@ -156,7 +142,7 @@ contract KoPOAP is ERC721, AccessControl, Pausable {
     function hasClaimed(bytes32 lectureHash, address attendee) 
         external 
         view 
-        returns (bool) 
+        returns (uint256) 
     {
         return _claimed[lectureHash][attendee];
     }
@@ -171,20 +157,6 @@ contract KoPOAP is ERC721, AccessControl, Pausable {
         returns (LectureInfo memory)
     {
         return _lectures[lectureCounter[lectureId]];
-    }
-    
-    /**
-     * @dev Get full lecture information including hash
-     * @param lectureId ID of the lecture
-     */
-    function getLectureWithHash(uint256 lectureId)
-        external
-        view
-        returns (string memory name, uint256 timestamp, bool active, string memory tokenURI, bytes32 lectureHash)
-    {
-        require(lectureId <= _lectureCount && lectureId > 0, "Invalid lecture ID");
-        LectureInfo memory info = _lectures[lectureId];
-        return (info.name, info.timestamp, info.active, info.tokenURI, info.lectureHash);
     }
 
 

@@ -49,7 +49,7 @@ export default async function handler(req, res) {
 
     // Check if attendee has already claimed
     const claimed = await hasClaimed(lectureId, attendeeAddress);
-    if (claimed) {
+    if (claimed > 0) {
       return res.status(400).json({ message: 'POAP already claimed for this lecture' });
     }
 
