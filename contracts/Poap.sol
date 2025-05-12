@@ -1,47 +1,55 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-import {ERC1155} from "./base/ERC1155Modified.sol";
+import {ERC721} from "./base/ERC721Modified.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {NotAllowed, PAUSER_ROLE, MINTER_ROLE, DEFAULT_ADMIN_ROLE, ArraysDifferentLengthError} from "./lib/Model.sol";
 
 /**
  * @title KoPOAP
- * @dev ERC1155 contract for issuing Proof of Attendance tokens for conference lectures
+ * @dev ERC721 contract for issuing Proof of Attendance tokens for conference lectures
  */
-contract KoPOAP is ERC1155, AccessControl, Pausable {
-    // Mapping from lecture ID to metadata about the lecture
-    mapping(uint256 => LectureInfo) private _lectures;
-    
-    // Number of registered lectures
-    uint256 private _lectureCount;
+contract KoPOAP is ERC721, AccessControl, Pausable {
+    mapping(bytes32 => LectureInfo) private _lectures;
     
     // Mapping to track which addresses have claimed which lecture POAPs
-    mapping(uint256 => mapping(address => bool)) private _claimed;
+    mapping(bytes32 => mapping(address => bool)) private _claimed;
+
+    // Mapping from token ID to lecture hash
+    mapping(uint256 => bytes32) private _tokenToLectureHash;
+    
+    // Mapping from address to their token IDs (for the getTokensOfOwner function)
+    mapping(address => uint256[]) private _ownedTokens;
+
+    // Current token ID counter
+    uint256 private _tokenIdCounter;
+
+    // Lecture ID counter
+    bytes32[] public lectureCounter;
     
     // Mapping from lecture hash to lecture ID for QR code verification
     mapping(bytes32 => uint256) private _lectureHashToId;
     
     struct LectureInfo {
+        bytes32 lectureHash;
         string name;
-        uint256 timestamp;
-        bool active;
+        uint256 deadline;
         string tokenURI;
         bytes32 lectureHash;
     }
-    /**
-    let's build a next.js app deployable to vercel later on where we have simple admin panel for lecture creation and qr code generation, qr code redirects lecture attendees to webpage where poap is minted for them (costs covered by private key stored in app, on admins behalf hes a payer) */
     
-    event LectureCreated(uint256 indexed lectureId, string name, uint256 timestamp, string tokenURI, bytes32 lectureHash);
-    event POAPClaimed(uint256 indexed lectureId, address indexed attendee);
+    event LectureCreated(bytes32 indexed lectureHash, string name, uint256 deadline, string tokenURI);
+    event POAPClaimed(bytes32 indexed lectureHash, address indexed attendee, uint256 tokenId);
 
     constructor(
-        string memory uri_, 
+        string memory name_, 
+        string memory symbol_,
         address defaultAdmin, 
         address pauser, 
         address minter
-    ) ERC1155(uri_) {
+    ) ERC721(name_, symbol_) {
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
         _grantRole(PAUSER_ROLE, pauser);
         _grantRole(MINTER_ROLE, minter);
@@ -50,40 +58,31 @@ contract KoPOAP is ERC1155, AccessControl, Pausable {
     /**
      * @dev Creates a new lecture POAP
      * @param name Name of the lecture
-     * @param timestamp Time when the lecture occurs
+     * @param deadline Time until when POAPs can be claimed
      * @param uri URI for the token metadata
      */
-    function createLecture(string memory name, uint256 timestamp, string memory uri)
+    function createLecture(string memory name, uint256 deadline, string memory uri)
         public 
         onlyRole(MINTER_ROLE) 
         whenNotPaused 
-        returns (uint256) 
-    {
-        uint256 lectureId = _lectureCount + 1;
+    {        
+        // Generate a unique hash for this lecture using name, deadline, and URI
+        bytes32 lectureHash = keccak256(abi.encodePacked(name, deadline, uri));
+
+        require(_lectures[lectureHash].lectureHash == bytes32(0), "Lecture already exists");
         
-        // Generate a unique hash for this lecture using name, timestamp, and URI
-        bytes32 lectureHash = keccak256(abi.encodePacked(name, timestamp, uri));
-        
-        // Ensure this hash is unique
-        require(_lectureHashToId[lectureHash] == 0, "Lecture with identical parameters already exists");
-        
-        _lectures[lectureId] = LectureInfo({
+        _lectures[lectureHash] = LectureInfo({
+            lectureHash: lectureHash,
             name: name,
-            timestamp: timestamp,
-            active: true,
-            tokenURI: uri,
-            lectureHash: lectureHash
+            deadline: deadline,
+            tokenURI: uri
         });
         
-        // Store the hash to ID mapping for QR code resolution
-        _lectureHashToId[lectureHash] = lectureId;
-        
-        _lectureCount = lectureId;
-        
-        emit LectureCreated(lectureId, name, timestamp, uri, lectureHash);
-        
-        return lectureId;
+        lectureCounter.push(lectureHash);
+                
+        emit LectureCreated(lectureHash, name, deadline, uri);
     }
+    
     
     /**
      * @dev Resolves a lecture ID from a hash
@@ -98,75 +97,68 @@ contract KoPOAP is ERC1155, AccessControl, Pausable {
     
     /**
      * @dev Admin mints POAP to attendee
-     * @param lectureId ID of the lecture
+     * @param lectureHash Hash of the lecture
      * @param attendee Address of the attendee
+     * @return tokenId The minted token ID
      */
-    function mintPOAP(uint256 lectureId, address attendee) 
+    function mintPOAP(bytes32 lectureHash, address attendee) 
         public 
         onlyRole(MINTER_ROLE) 
-        whenNotPaused 
+        whenNotPaused
+        returns (uint256)
     {
-        require(lectureId <= _lectureCount && lectureId > 0, "Invalid lecture ID");
-        require(_lectures[lectureId].active, "Lecture is not active");
-        require(!_claimed[lectureId][attendee], "POAP already claimed");
+        require(_lectures[lectureHash].lectureHash != bytes32(0), "Invalid lecture ID");
+        require(block.timestamp <= _lectures[lectureHash].deadline, "Lecture is not active");
+        require(!_claimed[lectureHash][attendee], "POAP already claimed");
         
-        _claimed[lectureId][attendee] = true;
+        _claimed[lectureHash][attendee] = true;
         
-        uint256[] memory ids = new uint256[](1);
-        uint256[] memory amounts = new uint256[](1);
+        // Increment token ID counter
+        _tokenIdCounter++;
+        uint256 tokenId = _tokenIdCounter;
         
-        ids[0] = lectureId;
-        amounts[0] = 1;
+        // Mint the token
+        _mint(attendee, tokenId);
+        _tokenToLectureHash[tokenId] = lectureHash;
         
-        _update(address(0), attendee, ids, amounts);
+        // Track the owner's tokens
+        _ownedTokens[attendee].push(tokenId);
         
-        emit POAPClaimed(lectureId, attendee);
+        emit POAPClaimed(lectureHash, attendee, tokenId);
+        
+        return tokenId;
     }
     
     /**
      * @dev Batch mint POAPs to multiple attendees
-     * @param lectureId ID of the lecture
+     * @param lectureHash Hash of the lecture
      * @param attendees Addresses of attendees
      */
-    function batchMintPOAP(uint256 lectureId, address[] memory attendees) 
+    function batchMintPOAP(bytes32 lectureHash, address[] memory attendees) 
         external
         onlyRole(MINTER_ROLE) 
         whenNotPaused 
     {
-        require(lectureId <= _lectureCount && lectureId > 0, "Invalid lecture ID");
-        require(_lectures[lectureId].active, "Lecture is not active");
+        require(block.timestamp <= _lectures[lectureHash].deadline, "Lecture is not active or invalid");
         
         for (uint256 i = 0; i < attendees.length; i++) {
-            if (!_claimed[lectureId][attendees[i]]) {
-                mintPOAP(lectureId, attendees[i]);
+            if (!_claimed[lectureHash][attendees[i]]) {
+                mintPOAP(lectureHash, attendees[i]);
             }
         }
     }
     
     /**
-     * @dev Set the active status of a lecture
-     * @param lectureId ID of the lecture
-     * @param active New active status
-     */
-    function setLectureActive(uint256 lectureId, bool active) 
-        external 
-        onlyRole(MINTER_ROLE) 
-    {
-        require(lectureId <= _lectureCount && lectureId > 0, "Invalid lecture ID");
-        _lectures[lectureId].active = active;
-    }
-    
-    /**
      * @dev Check if an attendee has claimed a POAP for a lecture
-     * @param lectureId ID of the lecture
+     * @param lectureHash ID of the lecture
      * @param attendee Address of the attendee
      */
-    function hasClaimed(uint256 lectureId, address attendee) 
+    function hasClaimed(bytes32 lectureHash, address attendee) 
         external 
         view 
         returns (bool) 
     {
-        return _claimed[lectureId][attendee];
+        return _claimed[lectureHash][attendee];
     }
     
     /**
@@ -176,11 +168,9 @@ contract KoPOAP is ERC1155, AccessControl, Pausable {
     function getLecture(uint256 lectureId) 
         external 
         view 
-        returns (string memory name, uint256 timestamp, bool active, string memory tokenURI)
+        returns (LectureInfo memory)
     {
-        require(lectureId <= _lectureCount && lectureId > 0, "Invalid lecture ID");
-        LectureInfo memory info = _lectures[lectureId];
-        return (info.name, info.timestamp, info.active, info.tokenURI);
+        return _lectures[lectureCounter[lectureId]];
     }
     
     /**
@@ -197,28 +187,37 @@ contract KoPOAP is ERC1155, AccessControl, Pausable {
         return (info.name, info.timestamp, info.active, info.tokenURI, info.lectureHash);
     }
 
+
     /**
-     * @dev Override for ERC1155 uri method to support token-specific URIs
-     * @param id Token ID to get URI for
+     * @dev Get the token URI for a specific token ID
+     * @param tokenId The ID of the token
+     * @return The token URI
      */
-    function uri(uint256 id) public view virtual override returns (string memory) {
-        require(id <= _lectureCount && id > 0, "Invalid token ID");
-        string memory tokenURI = _lectures[id].tokenURI;
-
-        // If the token has a specific URI, return it
-        if (bytes(tokenURI).length > 0) {
-            return tokenURI;
-        }
-
-        // Otherwise fall back to the base URI
-        return super.uri(id);
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        return _lectures[_tokenToLectureHash[tokenId]].tokenURI;
+    }
+    
+    /**
+     * @dev Base URI for computing tokenURI
+     */
+    function _baseURI() internal view virtual override returns (string memory) {
+        return "";
     }
     
     /**
      * @dev Get total number of lectures
      */
     function getLectureCount() external view returns (uint256) {
-        return _lectureCount;
+        return lectureCounter.length;
+    }
+
+    /**
+     * @dev Get all token IDs owned by a specific address
+     * @param owner The address to query
+     * @return An array of token IDs
+     */
+    function getTokensOfOwner(address owner) external view returns (uint256[] memory) {
+        return _ownedTokens[owner];
     }
     
     /**
@@ -236,23 +235,12 @@ contract KoPOAP is ERC1155, AccessControl, Pausable {
     }
     
     /**
-     * @dev Override for ERC1155 method to check paused state
-     */
-    function _update(address from, address to, uint256[] memory ids, uint256[] memory values) 
-        internal 
-        override 
-        whenNotPaused 
-    {
-        super._update(from, to, ids, values);
-    }
-    
-    /**
-     * @dev Required override for AccessControl/ERC1155
+     * @dev Required override for AccessControl/ERC721
      */
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ERC1155, AccessControl)
+        override(ERC721, AccessControl)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);

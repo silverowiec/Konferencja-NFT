@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/common/Layout';
-import { getLecture } from '../../lib/blockchain';
+import { getLecture, getLastTokenForOwner } from '../../lib/blockchain';
 
 export default function AttendLecture() {
   const router = useRouter();
@@ -23,19 +23,39 @@ export default function AttendLecture() {
     if (!lectureId) return;
     
     // Set contract address from environment variable
-    setContractAddress(process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '');
+    const contractAddressValue = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '';
+    setContractAddress(contractAddressValue);
     
     async function fetchLecture() {
       try {
+        // Determine if the lectureId parameter is a hash (starts with 0x) or a numeric ID
+        const isHash = typeof lectureId === 'string' && lectureId.startsWith('0x');
+        
+        // getLecture now handles both ID and hash based lookups
         const fetchedLecture = await getLecture(lectureId);
+        
+        if (!fetchedLecture) {
+          throw new Error('Lecture not found');
+        }
+        
+        // Check if the lecture deadline has passed
+        const currentTime = Math.floor(Date.now() / 1000);
+        if (fetchedLecture.timestamp < currentTime) {
+          setError(`This lecture has expired (deadline: ${new Date(fetchedLecture.timestamp * 1000).toLocaleString()})`);
+        }
+        
+        // Store the ID or hash that was used to find this lecture
         setLecture({
-          id: lectureId,
+          id: fetchedLecture.id || 'Unknown',
+          hash: isHash ? lectureId : fetchedLecture.hash,
+          lectureParam: lectureId,  // Store the original parameter used
           ...fetchedLecture
         });
+        
         setLoading(false);
       } catch (err) {
         console.error('Error fetching lecture:', err);
-        setError('Failed to load lecture details. Please check the QR code and try again.');
+        setError("Failed to load lecture details. Please check the QR code and try again.");
         setLoading(false);
       }
     }
@@ -77,25 +97,27 @@ export default function AttendLecture() {
       }
     } catch (err) {
       console.error('Error connecting wallet:', err);
-      setError('Failed to connect wallet: ' + (err.message || 'Unknown error'));
+      setError(`Failed to connect wallet: ${err.message || 'Unknown error'}`);
     }
   };
   
   // Function to mint POAP
   const mintPOAP = async () => {
-    if (!lectureId || !walletAddress) return;
+    if (!lecture || !walletAddress) return;
     
     setMintStatus('loading');
     setMintMessage('Minting your POAP...');
     
     try {
+      // Pass the original lecture parameter (ID or hash) that was used in the URL
+      // The backend can handle both formats
       const response = await fetch('/api/mint', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          lectureId,
+          lectureId: lecture.lectureParam || lectureId,
           attendeeAddress: walletAddress,
         }),
       });
@@ -115,7 +137,7 @@ export default function AttendLecture() {
     } catch (err) {
       console.error('Error minting POAP:', err);
       setMintStatus('error');
-      setMintMessage('Failed to mint POAP: ' + (err.message || 'Unknown error'));
+      setMintMessage(`Failed to mint POAP: ${err.message || 'Unknown error'}`);
     }
   };
 
@@ -126,21 +148,40 @@ export default function AttendLecture() {
         throw new Error('MetaMask is not installed');
       }
       
+      alert('wallet address: ' , walletAddress);
+      alert('contract address: ' , contractAddress);
+      
+      // Use numeric ID for MetaMask import if available, otherwise use lecture ID
+      const tokenIdForMetaMask = await getLastTokenForOwner(walletAddress);
+      
+      console.log('Debug info:', {
+        tokenIdForMetaMask,
+        walletAddress,
+        contractAddress
+      });
+      
+      if (!tokenIdForMetaMask) {
+        alert(`No tokens found for your address: ${walletAddress}`);
+        return;
+      }
+      
       // Request to add the token to MetaMask
       await window.ethereum.request({
         method: 'wallet_watchAsset',
         params: {
-          type: 'ERC1155', // Using ERC1155 token type
+          type: 'ERC721',
           options: {
             address: contractAddress, // Contract address
-            tokenId: lectureId, // Token ID is the lecture ID for POAPs
+            tokenId: tokenIdForMetaMask.toString(), // Token ID must be a string
           },
         },
       });
       
+      alert('Token successfully added to MetaMask!');
+      
     } catch (error) {
       console.error('Error importing token to MetaMask:', error);
-      alert('Failed to import token to MetaMask: ' + (error.message || 'Unknown error'));
+      alert(`Failed to import token to MetaMask: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -150,7 +191,7 @@ export default function AttendLecture() {
   };
 
   return (
-    <Layout title={`Attend Lecture - POAP Lecture App`}>
+    <Layout title={"Attend Lecture - POAP Lecture App"}>
       <div>
         <h1>Attend Lecture & Claim POAP</h1>
         
@@ -178,7 +219,7 @@ export default function AttendLecture() {
             {lecture.active && !walletConnected && (
               <div style={{ marginTop: '20px' }}>
                 <p>Connect your Ethereum wallet to claim your POAP for attending this lecture.</p>
-                <button onClick={connectWallet} style={{ marginTop: '10px' }}>
+                <button type="button" onClick={connectWallet} style={{ marginTop: '10px' }}>
                   Connect Wallet
                 </button>
               </div>
@@ -200,6 +241,7 @@ export default function AttendLecture() {
                       <div style={{ marginTop: '15px' }}>
                         <button 
                           onClick={importTokenToMetaMask}
+                          type="button"
                           className="btn-secondary"
                         >
                           Import Token to MetaMask
@@ -217,6 +259,7 @@ export default function AttendLecture() {
                       <div style={{ marginTop: '10px' }}>
                         <p>You can now claim your POAP for attending this lecture.</p>
                         <button 
+                          type="button"
                           onClick={mintPOAP}
                           className="btn-success"
                           style={{ marginTop: '10px' }}
@@ -230,6 +273,7 @@ export default function AttendLecture() {
                       <div style={{ marginTop: '10px' }}>
                         <p>{mintMessage}</p>
                         <button 
+                          type="button"
                           disabled
                           className="btn-success"
                           style={{ marginTop: '10px' }}
@@ -253,6 +297,7 @@ export default function AttendLecture() {
                         {contractAddress && (
                           <div style={{ marginTop: '15px' }}>
                             <button 
+                              type="button"
                               onClick={importTokenToMetaMask} 
                               className="btn-secondary"
                             >
