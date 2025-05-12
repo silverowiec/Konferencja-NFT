@@ -23,7 +23,17 @@ const QrScanner = ({ onScan, onError, active = true }) => {
     const initScanner = async () => {
       try {
         // Import the library dynamically
-        const Html5QrcodeScanner = (await import('html5-qrcode')).Html5QrcodeScanner;
+        const htmlLib = await import('html5-qrcode');
+        
+        // Find the correct constructor based on module format
+        // This handles both ESM and CJS imports which can vary between dev and prod
+        const Html5QrcodeScanner = 
+          htmlLib.Html5QrcodeScanner || // ESM format
+          (htmlLib.default?.Html5QrcodeScanner); // CJS format
+          
+        if (!Html5QrcodeScanner) {
+          throw new Error('Html5QrcodeScanner not found in the imported module');
+        }
         
         // Make sure we're not initializing twice
         if (hasInitializedRef.current) {
