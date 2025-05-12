@@ -3,9 +3,9 @@ import { useRouter } from 'next/router';
 import Layout from '../components/common/Layout';
 import dynamic from 'next/dynamic';
 
-// Dynamically import QrScanner with no SSR to avoid hydration issues
+// Dynamically import QrScannerAlt with no SSR to avoid hydration issues
 const QrScanner = dynamic(
-  () => import('../components/common/QrScanner'),
+  () => import('../components/common/QrScannerAlt'),
   { ssr: false, loading: () => <div className="loading-scanner">Loading camera...</div> }
 );
 

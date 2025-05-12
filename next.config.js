@@ -5,7 +5,7 @@ const nextConfig = {
     NEXT_PUBLIC_CONTRACT_ADDRESS: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS,
     NEXT_PUBLIC_NETWORK_NAME: process.env.NEXT_PUBLIC_NETWORK_NAME || 'sepolia',
   },
-  transpilePackages: ['html5-qrcode'],
+  transpilePackages: ['html5-qrcode', 'react-qr-scanner', 'jsqr', 'webrtc-adapter'],
 };
 
 module.exports = nextConfig;
