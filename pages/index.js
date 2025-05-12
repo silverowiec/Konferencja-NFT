@@ -77,11 +77,43 @@ export default function Home() {
             <p style={{ marginTop: '15px' }}>
               Note: You can only access lectures through QR codes provided to you.
             </p>
-            <div style={{ marginTop: '20px' }}>
+            
+            <div className="action-buttons">
+              <Link href="/token/1">
+                <button type="button" className="btn-view-example">
+                  View Example Token
+                </button>
+              </Link>
+              
               <Link href="/admin">
                 <button type="button" className="btn-secondary">Admin Login</button>
               </Link>
             </div>
+            
+            <style jsx>{`
+              .action-buttons {
+                display: flex;
+                gap: 15px;
+                margin-top: 25px;
+                flex-wrap: wrap;
+                justify-content: center;
+              }
+              
+              .btn-view-example {
+                background-color: #673ab7;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 20px;
+                font-size: 16px;
+                cursor: pointer;
+                transition: background-color 0.2s ease;
+              }
+              
+              .btn-view-example:hover {
+                background-color: #5e35b1;
+              }
+            `}</style>
 
             <style jsx>{`
               .scan-qr-button {
