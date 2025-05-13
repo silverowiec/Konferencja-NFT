@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/common/Layout';
 import TokenDetails from '../../components/common/TokenDetails';
+import { fetchMetadata } from '../../lib/blockchain';
 
 export default function TokenPage() {
   const router = useRouter();
-  const { id } = router.query;
+  const { id, source } = router.query;
   const [tokenData, setTokenData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -14,36 +15,51 @@ export default function TokenPage() {
     // Only fetch token data when we have an ID
     if (!id) return;
 
-    // This is an example function to fetch token metadata
-    // In a real app, you would call your API or blockchain service
     const fetchTokenData = async () => {
       try {
         setLoading(true);
         
-        // This is sample data - in a real app, you would fetch this from an API
-        // For demo purposes, we're using hardcoded sample data based on the ID
+        // First check if we have metadata in session storage (from admin view)
+        if (source === 'admin') {
+          const storedMetadata = sessionStorage.getItem(`token_${id}_metadata`);
+          if (storedMetadata) {
+            const parsedMetadata = JSON.parse(storedMetadata);
+            setTokenData(parsedMetadata);
+            setLoading(false);
+            return;
+          }
+        }
+        
+        // If no stored metadata, use sample data or fetch from blockchain
+        // For now using sample data as fallback, but in production this would
+        // fetch from blockchain or API
         const sampleMetadata = {
-          id: parseInt(id),
+          id: Number.parseInt(id),
           name: `Example NFT #${id}`,
           description: "This is an example NFT token for educational purposes.",
           image: "ipfs://QmZEBym3XzZHsWPb6GB4E2BLZb9ps9pTWircQD9RxHRNcN",
           attributes: [
             {
               trait_type: "color",
-              value: ["red", "blue", "green", "orange"][id % 4]
+              value: ["red", "blue", "green", "orange"][Number.parseInt(id) % 4]
             },
             {
               trait_type: "shape_type",
-              value: ["circle", "square", "triangle", "hexagon"][id % 4]
+              value: ["circle", "square", "triangle", "hexagon"][Number.parseInt(id) % 4]
             },
             {
               trait_type: "size",
-              value: ["small", "medium", "large", "extra large"][id % 4]
+              value: ["small", "medium", "large", "extra large"][Number.parseInt(id) % 4]
             }
           ]
         };
         
-        // Simulate API delay
+        // In a real production app, you'd fetch the token URI from the contract here
+        // const tokenURI = await getTokenURI(id);
+        // const realMetadata = await fetchMetadata(tokenURI);
+        // setTokenData(realMetadata);
+        
+        // For now, using sample data with slight delay for UI feedback
         setTimeout(() => {
           setTokenData(sampleMetadata);
           setLoading(false);
@@ -57,19 +73,19 @@ export default function TokenPage() {
     };
 
     fetchTokenData();
-  }, [id]);
+  }, [id, source]);
 
   return (
     <Layout title={`Token #${id} Details`}>
       <div className="token-page">
         <div className="header">
-          <h1>Token Details</h1>
-          <button 
-            className="back-button"
-            onClick={() => router.back()}
-          >
-            ← Back
-          </button>
+          <h1>Token Details</h1>            <button 
+              type="button"
+              className="back-button"
+              onClick={() => router.back()}
+            >
+              ← Back
+            </button>
         </div>
 
         {loading ? (
@@ -81,6 +97,7 @@ export default function TokenPage() {
           <div className="error-container">
             <p>{error}</p>
             <button 
+              type="button"
               className="retry-button"
               onClick={() => router.reload()}
             >

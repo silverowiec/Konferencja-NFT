@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
-import { getAllLectures, getLectureHashFromId } from '../../lib/blockchain';
+import { getAllLectures, getLectureHashFromId, fetchMetadata, convertIpfsToHttpUrl } from '../../lib/blockchain';
 import { generateQRCode } from '../../lib/qrcode';
+import Link from 'next/link';
 
 export default function LectureList({ refresh }) {
   const [lectures, setLectures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [qrCodes, setQrCodes] = useState({});
+  const [metadata, setMetadata] = useState({});
+  const [loadingMetadata, setLoadingMetadata] = useState({});
 
   // Fetch lectures when component mounts or refresh prop changes
   useEffect(() => {
@@ -68,6 +71,53 @@ export default function LectureList({ refresh }) {
     link.click();
     document.body.removeChild(link);
   };
+  
+  // Fetch metadata for a lecture
+  const handleFetchMetadata = async (lectureId, tokenURI) => {
+    if (!tokenURI) {
+      alert('This lecture does not have a valid token URI');
+      return;
+    }
+    
+    // Mark this lecture as loading metadata
+    setLoadingMetadata(prev => ({
+      ...prev,
+      [lectureId]: true
+    }));
+    
+    try {
+      // Fetch and process metadata
+      const fetchedMetadata = await fetchMetadata(tokenURI);
+      
+      // Add the lecture ID to the metadata
+      fetchedMetadata.id = lectureId;
+      
+      // Store the metadata indexed by lecture ID
+      setMetadata(prev => ({
+        ...prev,
+        [lectureId]: fetchedMetadata
+      }));
+    } catch (err) {
+      console.error(`Error fetching metadata for lecture ${lectureId}:`, err);
+      alert(`Failed to fetch metadata: ${err.message}`);
+    } finally {
+      // Mark this lecture as done loading metadata
+      setLoadingMetadata(prev => ({
+        ...prev,
+        [lectureId]: false
+      }));
+    }
+  };
+  
+  // View token details page with metadata
+  const handleViewTokenDetails = (lectureId) => {
+    if (metadata[lectureId]) {
+      // Store metadata in sessionStorage to avoid URL size limitations
+      sessionStorage.setItem(`token_${lectureId}_metadata`, JSON.stringify(metadata[lectureId]));
+      // Open token details page in a new tab
+      window.open(`/token/${lectureId}?source=admin`, '_blank');
+    }
+  };
 
   return (
     <div>
@@ -94,13 +144,36 @@ export default function LectureList({ refresh }) {
           <p>Token URI: {lecture.tokenURI}</p>
           
           <div style={{ marginTop: '15px' }}>
-            <button 
-              type="button" 
-              onClick={() => handleGenerateQR(lecture.id, lecture.hash || lecture.lectureHash)}
-              disabled={!lecture.hash && !lecture.lectureHash}
-            >
-              Generate QR Code
-            </button>
+            <div className="button-row">
+              <button 
+                type="button" 
+                onClick={() => handleGenerateQR(lecture.id, lecture.hash || lecture.lectureHash)}
+                disabled={!lecture.hash && !lecture.lectureHash}
+              >
+                Generate QR Code
+              </button>
+              
+              {lecture.tokenURI && (
+                <button 
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => handleFetchMetadata(lecture.id, lecture.tokenURI)}
+                  disabled={loadingMetadata[lecture.id]}
+                >
+                  {loadingMetadata[lecture.id] ? 'Loading...' : metadata[lecture.id] ? 'Reload Metadata' : 'Fetch Metadata'}
+                </button>
+              )}
+              
+              {metadata[lecture.id] && (
+                <button 
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => handleViewTokenDetails(lecture.id)}
+                >
+                  View Token Details
+                </button>
+              )}
+            </div>
             
             {qrCodes[lecture.id] && (
               <div className="qr-code-container">
@@ -119,11 +192,52 @@ export default function LectureList({ refresh }) {
                     Download QR Code
                   </button>
                 </p>
-                <p style={{ marginTop: '10px', fontSize: '0.9rem' }}>
-                </p>
+              </div>
+            )}
+            
+            {metadata[lecture.id] && (
+              <div className="metadata-preview">
+                <h4>Token Metadata Preview</h4>
+                {metadata[lecture.id].image && (
+                  <div className="metadata-image">
+                    <img 
+                      src={metadata[lecture.id].image} 
+                      alt={metadata[lecture.id].name || 'NFT image'}
+                      style={{ maxWidth: '150px', maxHeight: '150px' }}
+                    />
+                  </div>
+                )}
+                <div className="metadata-info">
+                  <p><strong>Name:</strong> {metadata[lecture.id].name || 'Unnamed'}</p>
+                  <p><strong>Description:</strong> {(metadata[lecture.id].description || 'No description').substring(0, 100)}...</p>
+                  {metadata[lecture.id].attributes && metadata[lecture.id].attributes.length > 0 && (
+                    <p><strong>Attributes:</strong> {metadata[lecture.id].attributes.length} traits available</p>
+                  )}
+                </div>
               </div>
             )}
           </div>
+          
+          <style jsx>{`
+            .button-row {
+              display: flex;
+              gap: 10px;
+              margin-bottom: 15px;
+              flex-wrap: wrap;
+            }
+            .metadata-preview {
+              margin-top: 15px;
+              border-top: 1px solid #eee;
+              padding-top: 15px;
+              display: flex;
+              flex-wrap: wrap;
+              gap: 15px;
+            }
+            .metadata-info {
+              flex: 1;
+              min-width: 200px;
+            }
+          `}</style>
         </div>
       ))}
     </div>

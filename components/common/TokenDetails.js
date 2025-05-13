@@ -27,8 +27,8 @@ const TokenDetails = ({ metadata }) => {
     // Convert IPFS URI to HTTP gateway URL
     if (imageUri.startsWith('ipfs://')) {
       const ipfsHash = imageUri.replace('ipfs://', '');
-      // Using public IPFS gateway
-      return `https://ipfs.io/ipfs/${ipfsHash}`;
+      // Using Pinata gateway (more reliable for NFT images)
+      return `https://gateway.pinata.cloud/ipfs/${ipfsHash}`;
     }
     
     return imageUri;
