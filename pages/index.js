@@ -132,7 +132,7 @@ export default function Home() {
                   <p>Date: {formatDate(lecture.timestamp)}</p>
                   <p>Status: {lecture.active ? 'Active' : 'Inactive'}</p>
                   <p style={{ marginTop: '10px' }}>
-                    <Link href={`/attend/${lecture.id}`}>View Lecture</Link>
+                    <Link href={`/attend/${lecture.lectureHash}`}>View Lecture</Link>
                   </p>
                 </div>
               ))}

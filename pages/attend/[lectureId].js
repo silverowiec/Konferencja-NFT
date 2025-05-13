@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/common/Layout';
-import { getLecture, getLastTokenForOwner, hasClaimed } from '../../lib/blockchain';
+import { getLecture, getLastTokenForOwner, hasClaimed, getLectureByHash } from '../../lib/blockchain';
 
 export default function AttendLecture() {
   const router = useRouter();
@@ -32,7 +32,7 @@ export default function AttendLecture() {
         const isHash = typeof lectureId === 'string' && lectureId.startsWith('0x');
         
         // getLecture now handles both ID and hash based lookups
-        const fetchedLecture = await getLecture(lectureId);
+        const fetchedLecture = await getLectureByHash(lectureId);
         
         if (!fetchedLecture) {
           throw new Error('Lecture not found');
@@ -198,7 +198,7 @@ export default function AttendLecture() {
         {lecture && (
           <div className="card">
             <h2>{lecture.name}</h2>
-            <p>Date: {formatDate(lecture.timestamp)}</p>
+            <p>Mintable until: {formatDate(lecture.timestamp)}</p>
             <p>Status: {lecture.active ? 'Active' : 'Inactive'}</p>
             
             {!lecture.active && (

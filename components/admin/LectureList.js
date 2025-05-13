@@ -18,6 +18,7 @@ export default function LectureList({ refresh }) {
         fetchedLectures.sort((a, b) => b.timestamp - a.timestamp);
         setLectures(fetchedLectures);
         setLoading(false);
+        console.log('Fetched lectures:', fetchedLectures);
       } catch (err) {
         console.error('Error fetching lectures:', err);
         setError('Failed to load lectures. Please try again later.');
