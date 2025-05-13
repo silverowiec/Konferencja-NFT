@@ -22,7 +22,10 @@ const TokenDetails = ({ metadata }) => {
 
   // Process image URL - convert IPFS to HTTP if needed
   const getImageUrl = (imageUri) => {
-    if (!imageUri || imageError) return null;
+    if (!imageUri || imageError) {
+      // Return a default placeholder if no image or error
+      return 'https://placehold.co/400x400?text=NFT';
+    }
     
     // Convert IPFS URI to HTTP gateway URL
     if (imageUri.startsWith('ipfs://')) {
@@ -40,6 +43,15 @@ const TokenDetails = ({ metadata }) => {
       return <p className="no-traits">No traits available for this token</p>;
     }
     
+    // Filter out any invalid attributes
+    const validAttributes = metadata.attributes.filter(
+      attr => attr && attr.trait_type && attr.value !== undefined
+    );
+    
+    if (validAttributes.length === 0) {
+      return <p className="no-traits">No traits available</p>;
+    }
+    
     return (
       <div className="traits-table-container">
         <table className="traits-table">
@@ -50,11 +62,11 @@ const TokenDetails = ({ metadata }) => {
             </tr>
           </thead>
           <tbody>
-            {metadata.attributes.map((attr) => (
-              // Using trait_type+value as key is more reliable than index
-              <tr key={`${attr.trait_type}-${attr.value}`}>
+            {validAttributes.map((attr, index) => (
+              // Using trait_type+value+index as key for better uniqueness
+              <tr key={`${attr.trait_type}-${attr.value}-${index}`}>
                 <td>{attr.trait_type}</td>
-                <td>{attr.value}</td>
+                <td>{String(attr.value)}</td>
               </tr>
             ))}
           </tbody>
@@ -69,7 +81,7 @@ const TokenDetails = ({ metadata }) => {
         <div className="token-image-container">
           {/* Using relative size to maintain aspect ratio */}
           <div className="token-image-wrapper">
-            {getImageUrl(metadata.image) && !imageError ? (
+            {!imageError ? (
               <img 
                 src={getImageUrl(metadata.image)} 
                 alt={metadata.name || 'NFT'}
@@ -79,8 +91,14 @@ const TokenDetails = ({ metadata }) => {
             ) : (
               <div className="placeholder-container">
                 <NftPlaceholder 
-                  text={metadata.name ? metadata.name.substring(0, 10) : 'NFT'} 
+                  text={metadata.name ? metadata.name.substring(0, 10) : 'NFT'}
+                  size={180}
                 />
+              </div>
+            )}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="debug-info">
+                <small>Image URL: {metadata.image || 'Not provided'}</small>
               </div>
             )}
           </div>
@@ -89,7 +107,7 @@ const TokenDetails = ({ metadata }) => {
         <div className="token-info">
           <div className="token-header">
             <h2 className="token-name">{metadata.name || 'Unnamed NFT'}</h2>
-            {metadata.id && <span className="token-id">#{metadata.id}</span>}
+            {/* {metadata.id && <span className="token-id">#{metadata.id}</span>} */}
           </div>
           
           <div className="token-description">
@@ -106,18 +124,17 @@ const TokenDetails = ({ metadata }) => {
       <style jsx>{`
         .token-details {
           width: 100%;
-          max-width: 800px;
           margin: 0 auto;
-          padding: 20px;
+          padding: 0;
         }
         
         .token-card {
           display: flex;
           flex-direction: column;
-          border-radius: 16px;
+          border-radius: 12px;
           overflow: hidden;
           background-color: #ffffff;
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
           
           @media (min-width: 768px) {
             flex-direction: row;
@@ -131,43 +148,64 @@ const TokenDetails = ({ metadata }) => {
           align-items: center;
           justify-content: center;
           background-color: #f8f9fa;
+          min-height: 250px;
         }
         
         .token-image-wrapper {
           width: 100%;
+          max-width: 300px;
+          height: 200px;
           position: relative;
-          padding-bottom: 100%; /* 1:1 Aspect Ratio */
           overflow: hidden;
           border-radius: 8px;
+          margin: 0 auto;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
+
         
         .token-image {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
+          max-width: 100%;
+          max-height: 100%;
           object-fit: contain;
           background-color: #f1f1f1;
         }
         
         .placeholder-container {
-          position: absolute;
-          top: 0;
-          left: 0;
           width: 100%;
           height: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
           background-color: #f8f8f8;
+          border-radius: 8px;
+        }
+        
+        .debug-info {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          background-color: rgba(0,0,0,0.6);
+          color: white;
+          font-size: 10px;
+          padding: 4px;
+          text-align: center;
+          display: none;
+        }
+        
+        /* Only show debug info when hovering over the image container in development */
+        .token-image-wrapper:hover .debug-info {
+          display: block;
         }
         
         .token-info {
           flex: 1;
-          padding: 25px;
+          padding: 20px;
           display: flex;
           flex-direction: column;
+          min-width: 0; /* Fix for flexbox content overflow */
         }
         
         .token-header {
@@ -193,52 +231,54 @@ const TokenDetails = ({ metadata }) => {
         }
         
         .token-description {
-          margin-bottom: 20px;
-          line-height: 1.6;
+          margin-bottom: 15px;
+          line-height: 1.5;
           color: #555;
+          font-size: 14px;
         }
         
         .token-traits h3 {
-          margin-top: 0;
-          margin-bottom: 15px;
-          font-size: 18px;
+          margin-top: 15px;
+          margin-bottom: 5px;
+          font-size: 16px;
           color: #333;
         }
         
         .traits-table-container {
+          margin-top: 10px;
+          margin-bottom: 15px;
           max-height: 200px;
           overflow-y: auto;
+          border: 1px solid #eee;
           border-radius: 8px;
-          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
         
         .traits-table {
           width: 100%;
           border-collapse: collapse;
+          font-size: 14px;
         }
         
         .traits-table th {
-          background-color: #f1f1f1;
-          padding: 12px;
+          background-color: #f5f5f5;
+          padding: 8px;
           text-align: left;
-          font-weight: 600;
-          color: #333;
+          border-bottom: 1px solid #ddd;
         }
         
         .traits-table td {
-          padding: 12px;
-          border-top: 1px solid #eee;
-          color: #555;
+          padding: 8px;
+          border-bottom: 1px solid #eee;
         }
         
-        .traits-table tr:nth-child(even) {
-          background-color: #f9f9f9;
+        .traits-table tr:last-child td {
+          border-bottom: none;
         }
         
         .no-traits {
           color: #888;
           font-style: italic;
-          padding: 10px 0;
+          padding: 8px 0;
         }
         
         .token-error {
@@ -258,6 +298,16 @@ const TokenDetails = ({ metadata }) => {
           
           .token-image-wrapper {
             padding-bottom: 75%; /* Smaller aspect ratio on mobile */
+          }
+          
+          .traits-table-container {
+            max-height: 150px;
+          }
+          
+          .token-traits h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            margin-top: 15px;
           }
         }
       `}</style>

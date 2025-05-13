@@ -2,6 +2,34 @@ import { useState, useEffect } from 'react';
 import { getAllLectures, getLectureHashFromId, fetchMetadata, convertIpfsToHttpUrl } from '../../lib/blockchain';
 import { generateQRCode } from '../../lib/qrcode';
 import Link from 'next/link';
+import NftPlaceholder from '../common/NftPlaceholder';
+
+// Sub-component to handle image loading with fallback
+const ImageWithFallback = ({ src, alt, lectureId, name }) => {
+  const [error, setError] = useState(false);
+  
+  const handleError = () => {
+    setError(true);
+  };
+  
+  return (
+    <>
+      {!error ? (
+        <img
+          src={src}
+          alt={alt}
+          style={{ maxWidth: '180px', maxHeight: '180px', borderRadius: '8px' }}
+          onError={handleError}
+        />
+      ) : (
+        <NftPlaceholder 
+          size={160}
+          text={name ? name.substring(0, 10) : `Token #${lectureId}`}
+        />
+      )}
+    </>
+  );
+};
 
 export default function LectureList({ refresh }) {
   const [lectures, setLectures] = useState([]);
@@ -22,6 +50,46 @@ export default function LectureList({ refresh }) {
         setLectures(fetchedLectures);
         setLoading(false);
         console.log('Fetched lectures:', fetchedLectures);
+        
+        // Define function to fetch metadata for a lecture inside useEffect to avoid dependency issues
+        async function fetchMetadataForLecture(lectureId, tokenURI) {
+          if (!tokenURI) return;
+          
+          // Mark this lecture as loading metadata
+          setLoadingMetadata(prev => ({
+            ...prev,
+            [lectureId]: true
+          }));
+          
+          try {
+            // Fetch and process metadata
+            const fetchedMetadata = await fetchMetadata(tokenURI);
+            
+            // Add the lecture ID to the metadata
+            fetchedMetadata.id = lectureId;
+            
+            // Store the metadata indexed by lecture ID
+            setMetadata(prev => ({
+              ...prev,
+              [lectureId]: fetchedMetadata
+            }));
+          } catch (err) {
+            console.error(`Error fetching metadata for lecture ${lectureId}:`, err);
+          } finally {
+            // Mark this lecture as done loading metadata
+            setLoadingMetadata(prev => ({
+              ...prev,
+              [lectureId]: false
+            }));
+          }
+        }
+        
+        // Automatically fetch metadata for all lectures with a tokenURI
+        for (const lecture of fetchedLectures) {
+          if (lecture.tokenURI) {
+            fetchMetadataForLecture(lecture.id, lecture.tokenURI);
+          }
+        }
       } catch (err) {
         console.error('Error fetching lectures:', err);
         setError('Failed to load lectures. Please try again later.');
@@ -55,7 +123,7 @@ export default function LectureList({ refresh }) {
       }));
     } catch (err) {
       console.error('Error generating QR code:', err);
-      alert('Failed to generate QR code: ' + err.message);
+      alert(`Failed to generate QR code: ${err.message}`);
     }
   };
 
@@ -154,24 +222,23 @@ export default function LectureList({ refresh }) {
                 Generate QR Code
               </button>
               
-              {lecture.tokenURI && (
-                <button 
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => handleFetchMetadata(lecture.id, lecture.tokenURI)}
-                  disabled={loadingMetadata[lecture.id]}
-                >
-                  {loadingMetadata[lecture.id] ? 'Loading...' : metadata[lecture.id] ? 'Reload Metadata' : 'Fetch Metadata'}
-                </button>
-              )}
-              
-              {metadata[lecture.id] && (
+              {lecture.tokenURI && metadata[lecture.id] && (
                 <button 
                   type="button"
                   className="btn-primary"
                   onClick={() => handleViewTokenDetails(lecture.id)}
                 >
-                  View Token Details
+                  View Full Token Details
+                </button>
+              )}
+              
+              {lecture.tokenURI && !metadata[lecture.id] && !loadingMetadata[lecture.id] && (
+                <button 
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => handleFetchMetadata(lecture.id, lecture.tokenURI)}
+                >
+                  Reload Metadata
                 </button>
               )}
             </div>
@@ -196,24 +263,53 @@ export default function LectureList({ refresh }) {
               </div>
             )}
             
-            {metadata[lecture.id] && (
+            {loadingMetadata[lecture.id] && (
+              <div className="loading-metadata">
+                <p>Loading metadata...</p>
+              </div>
+            )}
+            
+            {!loadingMetadata[lecture.id] && metadata[lecture.id] && (
               <div className="metadata-preview">
-                <h4>Token Metadata Preview</h4>
-                {metadata[lecture.id].image && (
+                <h4>Token Metadata</h4>
+                <div className="metadata-content">
                   <div className="metadata-image">
-                    <img 
-                      src={metadata[lecture.id].image} 
+                    <ImageWithFallback
+                      src={metadata[lecture.id].image}
                       alt={metadata[lecture.id].name || 'NFT image'}
-                      style={{ maxWidth: '150px', maxHeight: '150px' }}
+                      lectureId={lecture.id}
+                      name={metadata[lecture.id].name}
                     />
                   </div>
-                )}
-                <div className="metadata-info">
-                  <p><strong>Name:</strong> {metadata[lecture.id].name || 'Unnamed'}</p>
-                  <p><strong>Description:</strong> {(metadata[lecture.id].description || 'No description').substring(0, 100)}...</p>
-                  {metadata[lecture.id].attributes && metadata[lecture.id].attributes.length > 0 && (
-                    <p><strong>Attributes:</strong> {metadata[lecture.id].attributes.length} traits available</p>
-                  )}
+                  <div className="metadata-info">
+                    <p><strong>Name:</strong> {metadata[lecture.id].name || 'Unnamed'}</p>
+                    <p><strong>Description:</strong> {(metadata[lecture.id].description || 'No description').substring(0, 100)}...</p>
+                    
+                    {/* Display attributes table */}
+                    {metadata[lecture.id].attributes && metadata[lecture.id].attributes.length > 0 && (
+                      <>
+                        <h5>Attributes</h5>
+                        <div className="attributes-table-container">
+                          <table className="attributes-table">
+                            <thead>
+                              <tr>
+                                <th>Trait</th>
+                                <th>Value</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {metadata[lecture.id].attributes.map((attr) => (
+                                <tr key={`${lecture.id}-${attr.trait_type}-${attr.value}`}>
+                                  <td>{attr.trait_type}</td>
+                                  <td>{attr.value}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -230,13 +326,63 @@ export default function LectureList({ refresh }) {
               margin-top: 15px;
               border-top: 1px solid #eee;
               padding-top: 15px;
+              width: 100%;
+            }
+            .metadata-content {
               display: flex;
               flex-wrap: wrap;
-              gap: 15px;
+              gap: 20px;
+            }
+            .metadata-image {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              border: 1px solid #eee;
+              border-radius: 8px;
+              padding: 10px;
+              background-color: #f9f9f9;
             }
             .metadata-info {
               flex: 1;
               min-width: 200px;
+            }
+            .attributes-table-container {
+              margin-top: 10px;
+              margin-bottom: 15px;
+              max-height: 200px;
+              overflow-y: auto;
+              border: 1px solid #eee;
+              border-radius: 8px;
+            }
+            .attributes-table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 14px;
+            }
+            .attributes-table th {
+              background-color: #f5f5f5;
+              padding: 8px;
+              text-align: left;
+              border-bottom: 1px solid #ddd;
+            }
+            .attributes-table td {
+              padding: 8px;
+              border-bottom: 1px solid #eee;
+            }
+            .attributes-table tr:last-child td {
+              border-bottom: none;
+            }
+            .loading-metadata {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              padding: 20px;
+              color: #666;
+              font-style: italic;
+            }
+            h5 {
+              margin-bottom: 5px;
+              margin-top: 15px;
             }
           `}</style>
         </div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/common/Layout';
 import TokenDetails from '../../components/common/TokenDetails';
-import { fetchMetadata } from '../../lib/blockchain';
+import { fetchMetadata, convertIpfsToHttpUrl } from '../../lib/blockchain';
 
 export default function TokenPage() {
   const router = useRouter();
@@ -10,6 +10,8 @@ export default function TokenPage() {
   const [tokenData, setTokenData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [debugMode, setDebugMode] = useState(false);
+  const [rawData, setRawData] = useState(null);
 
   useEffect(() => {
     // Only fetch token data when we have an ID
@@ -25,7 +27,13 @@ export default function TokenPage() {
           if (storedMetadata) {
             const parsedMetadata = JSON.parse(storedMetadata);
             setTokenData(parsedMetadata);
+            setRawData(parsedMetadata); // Store raw data for debug mode
             setLoading(false);
+            
+            // Check if debug mode is requested in URL
+            if (router.query.debug === 'true') {
+              setDebugMode(true);
+            }
             return;
           }
         }
@@ -62,6 +70,13 @@ export default function TokenPage() {
         // For now, using sample data with slight delay for UI feedback
         setTimeout(() => {
           setTokenData(sampleMetadata);
+          setRawData(sampleMetadata); // Store raw data for debug mode
+          
+          // Check if debug mode is requested in URL
+          if (router.query.debug === 'true') {
+            setDebugMode(true);
+          }
+          
           setLoading(false);
         }, 800);
         
@@ -73,19 +88,31 @@ export default function TokenPage() {
     };
 
     fetchTokenData();
-  }, [id, source]);
+  }, [id, source, router.query.debug]);
 
   return (
     <Layout title={`Token #${id} Details`}>
       <div className="token-page">
         <div className="header">
-          <h1>Token Details</h1>            <button 
+          <h1>Token Details</h1>
+          <div className="header-buttons">
+            {process.env.NODE_ENV !== 'production' && (
+              <button 
+                type="button"
+                className={`debug-button ${debugMode ? 'active' : ''}`}
+                onClick={() => setDebugMode(!debugMode)}
+              >
+                {debugMode ? 'Hide Debug Info' : 'Show Debug Info'}
+              </button>
+            )}
+            <button 
               type="button"
               className="back-button"
               onClick={() => router.back()}
             >
               ← Back
             </button>
+          </div>
         </div>
 
         {loading ? (
@@ -105,7 +132,26 @@ export default function TokenPage() {
             </button>
           </div>
         ) : (
-          <TokenDetails metadata={tokenData} />
+          <>
+            <TokenDetails metadata={tokenData} />
+            
+            {/* Debug view showing raw metadata */}
+            {debugMode && rawData && (
+              <div className="debug-container">
+                <h2>Raw Metadata</h2>
+                <div className="debug-info">
+                  {rawData.image && (
+                    <div className="debug-item">
+                      <strong>Raw Image URL:</strong> {rawData.image}
+                      <br />
+                      <strong>Converted URL:</strong> {convertIpfsToHttpUrl(rawData.image)}
+                    </div>
+                  )}
+                  <pre>{JSON.stringify(rawData, null, 2)}</pre>
+                </div>
+              </div>
+            )}
+          </>
         )}
         
         <style jsx>{`
@@ -143,6 +189,32 @@ export default function TokenPage() {
             background-color: #f5f5f5;
             border-color: #ccc;
           }
+            .attributes-table-container {
+              margin-top: 10px;
+              margin-bottom: 15px;
+              max-height: 200px;
+              overflow-y: auto;
+              border: 1px solid #eee;
+              border-radius: 8px;
+            }
+            .attributes-table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 14px;
+            }
+            .attributes-table th {
+              background-color: #f5f5f5;
+              padding: 8px;
+              text-align: left;
+              border-bottom: 1px solid #ddd;
+            }
+            .attributes-table td {
+              padding: 8px;
+              border-bottom: 1px solid #eee;
+            }
+            .attributes-table tr:last-child td {
+              border-bottom: none;
+            }
           
           .loading-container {
             display: flex;
@@ -191,6 +263,65 @@ export default function TokenPage() {
           
           .retry-button:hover {
             background-color: #b71c1c;
+          }
+          
+          .header-buttons {
+            display: flex;
+            gap: 10px;
+          }
+          
+          .debug-button {
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            color: #333;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+          }
+          
+          .debug-button:hover {
+            background-color: #e0e0e0;
+          }
+          
+          .debug-button.active {
+            background-color: #e6f2ff;
+            border-color: #99ccff;
+            color: #0070f3;
+          }
+          
+          .debug-container {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border: 1px dashed #ccc;
+            border-radius: 8px;
+          }
+          
+          .debug-container h2 {
+            font-size: 20px;
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #555;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 8px;
+          }
+          
+          .debug-info {
+            font-family: monospace;
+            font-size: 14px;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #eee;
+            overflow-x: auto;
+          }
+          
+          .debug-item {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px dotted #ddd;
           }
         `}</style>
       </div>
