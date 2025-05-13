@@ -161,6 +161,19 @@ contract KoPOAP is ERC721, AccessControl, Pausable {
 
 
     /**
+     * @dev Get lecture information by hash
+     * @param lectureHash Hash of the lecture
+     */
+    function getLectureByHash(bytes32 lectureHash) 
+        external 
+        view 
+        returns (LectureInfo memory)
+    {
+        return _lectures[lectureHash];
+    }
+
+
+    /**
      * @dev Get the token URI for a specific token ID
      * @param tokenId The ID of the token
      * @return The token URI

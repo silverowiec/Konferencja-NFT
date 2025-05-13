@@ -96,7 +96,7 @@ export default function LectureForm({ onLectureCreated }) {
         </div>
         
         <div className="form-group">
-          <label htmlFor="date">Date</label>
+          <label htmlFor="date">Minting Deadline (Date)</label>
           <input
             type="date"
             id="date"
@@ -108,7 +108,7 @@ export default function LectureForm({ onLectureCreated }) {
         </div>
         
         <div className="form-group">
-          <label htmlFor="time">Time</label>
+          <label htmlFor="time">Minting Deadline (Time)</label>
           <input
             type="time"
             id="time"
