@@ -14,7 +14,40 @@ import NftPlaceholder from './NftPlaceholder';
  */
 const TokenDetails = ({ metadata }) => {
   const [imageError, setImageError] = useState(false);
+  const [proof, setProof] = useState([]);
   
+  // Helper to get contract address from window or env
+  const getContractAddress = () => {
+    // Try to get from NEXT_PUBLIC_CONTRACT_ADDRESS or fallback to window.ethereum.selectedAddress
+    if (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS) return process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
+    // Optionally, you can hardcode or fetch from elsewhere
+    return '';
+  };
+
+  // Generate proof using MetaMask signature
+  const handleGenerateProof = async () => {
+    if (!window.ethereum || !window.ethereum.request) {
+      alert('MetaMask is not available.');
+      return;
+    }
+    try {
+      // Request accounts
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const account = accounts[0];
+      const contractAddress = getContractAddress();
+      const tokenId = metadata.id;
+      const message = `I am owner of ${contractAddress} token ID ${tokenId}`;
+      // Sign message
+      const signature = await window.ethereum.request({
+        method: 'personal_sign',
+        params: [message, account],
+      });
+      setProof([metadata.id, signature]);
+    } catch (err) {
+      alert(`Failed to generate signature: ${err?.message ?? err}`);
+    }
+  };
+
   // Handle missing metadata gracefully
   if (!metadata) {
     return <div className="token-error">No token metadata available</div>;
@@ -70,7 +103,7 @@ const TokenDetails = ({ metadata }) => {
     
     // Filter out any invalid attributes
     const validAttributes = metadata.attributes.filter(
-      attr => attr && attr.trait_type && attr.value !== undefined
+      attr => attr?.trait_type && attr.value !== undefined
     );
     
     if (validAttributes.length === 0) {
@@ -141,9 +174,30 @@ const TokenDetails = ({ metadata }) => {
                         ))}
                       </tbody>
                     </table>
+                    {proof[0] && metadata.id === proof[0] && !window.location.pathname.includes('/token') && (
+                      <div>
+                        <h2><b>Proof:</b></h2>
+                        <div className="proof-container">
+                          {proof[1].substring(0, 20)}... 
+                          {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
+                          <button 
+                            className="copy-button" 
+                            onClick={() => navigator.clipboard.writeText(proof[1])}
+                          >
+                            Copy to clipboard 📋
+                          </button>
+                        </div>
+                      </div>
+                    ) || (
+                      <button type="button" className="btn-primary" style={{marginTop: 16}} onClick={handleGenerateProof}>
+                        Generate Proof
+                      </button>
+                    )}
                   </div>
                 </>
               )}
+                
+                
             </div>
           </div>
         </div>      
@@ -316,6 +370,34 @@ const TokenDetails = ({ metadata }) => {
           .attributes-table td {
             padding: 7px 6px !important;
           }
+        }
+        .btn-primary {
+          background-color: #0070f3;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          padding: 10px 20px;
+          font-size: 16px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .btn-primary:hover {
+          background-color: #0051a8;
+        }
+        .proof-container {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .copy-button {
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-size: 16px;
+          color: #0070f3;
+        }
+        .copy-button:hover {
+          color: #0070f3;
         }
       `}</style>
     </>

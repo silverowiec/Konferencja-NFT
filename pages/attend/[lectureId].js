@@ -131,7 +131,7 @@ export default function AttendLecture() {
       console.log('Image URL after processing:', metadata.image);
       
       // Add lecture ID to the metadata for reference
-      metadata.id = lectureId;
+      metadata.id = alreadyClaimed;
       
       // Add lecture name to metadata if available
       if (lecture && lecture.name) {

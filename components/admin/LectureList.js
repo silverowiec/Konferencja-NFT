@@ -222,7 +222,7 @@ export default function LectureList({ refresh }) {
                 Generate QR Code
               </button>
               
-              {lecture.tokenURI && metadata[lecture.id] && (
+              {/* {lecture.tokenURI && metadata[lecture.id] && (
                 <button 
                   type="button"
                   className="btn-primary"
@@ -230,7 +230,7 @@ export default function LectureList({ refresh }) {
                 >
                   View Full Token Details
                 </button>
-              )}
+              )} */}
               
               {lecture.tokenURI && !metadata[lecture.id] && !loadingMetadata[lecture.id] && (
                 <button 
