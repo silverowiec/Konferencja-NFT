@@ -36,6 +36,31 @@ const TokenDetails = ({ metadata }) => {
     
     return imageUri;
   };
+  const ImageWithFallback = ({ src, alt, lectureId, name }) => {
+    const [error, setError] = useState(false);
+    
+    const handleError = () => {
+      setError(true);
+    };
+    
+    return (
+      <>
+        {!error ? (
+          <img
+            src={src}
+            alt={alt}
+            style={{ maxWidth: '180px', maxHeight: '180px', borderRadius: '8px' }}
+            onError={handleError}
+          />
+        ) : (
+          <NftPlaceholder 
+            size={160}
+            text={name ? name.substring(0, 10) : `Token #${lectureId}`}
+          />
+        )}
+      </>
+    );
+  };
 
   // Format attributes for display
   const renderAttributes = () => {
@@ -53,74 +78,75 @@ const TokenDetails = ({ metadata }) => {
     }
     
     return (
-      <div className="traits-table-container">
-        <table className="traits-table">
-          <thead>
-            <tr>
-              <th>Trait</th>
-              <th>Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            {validAttributes.map((attr, index) => (
-              // Using trait_type+value+index as key for better uniqueness
-              <tr key={`${attr.trait_type}-${attr.value}-${index}`}>
-                <td>{attr.trait_type}</td>
-                <td>{String(attr.value)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
+        validAttributes && (
+            <>
+              <h5>Attributes</h5>
+              <div className="attributes-table-container">
+                <table className="attributes-table">
+                  <thead>
+                    <tr>
+                      <th>Trait</th>
+                      <th>Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {validAttributes.map((attr) => (
+                      <tr key={attr.value}>
+                        <td>{attr.trait_type}</td>
+                        <td>{attr.value}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          
+    ));
   };
   
   return (
-    <div className="token-details">
-      <div className="token-card">
-        <div className="token-image-container">
-          {/* Using relative size to maintain aspect ratio */}
-          <div className="token-image-wrapper">
-            {!imageError ? (
-              <img 
-                src={getImageUrl(metadata.image)} 
-                alt={metadata.name || 'NFT'}
-                className="token-image"
-                onError={() => setImageError(true)}
+    metadata && (
+        <>
+        <div className="metadata-preview">
+          <h4>Token Metadata</h4>
+          <div className="metadata-content">
+            <div className="metadata-image">
+              <ImageWithFallback
+                src={metadata.image}
+                name={metadata.name}
               />
-            ) : (
-              <div className="placeholder-container">
-                <NftPlaceholder 
-                  text={metadata.name ? metadata.name.substring(0, 10) : 'NFT'}
-                  size={180}
-                />
-              </div>
-            )}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="debug-info">
-                <small>Image URL: {metadata.image || 'Not provided'}</small>
-              </div>
-            )}
+            </div>
+            <div className="metadata-info">
+              <p><strong>Name:</strong> {metadata.name || 'Unnamed'}</p>
+              <p><strong>Description:</strong> {(metadata.description || 'No description').substring(0, 100)}...</p>
+              
+              {/* Display attributes table */}
+              {metadata.attributes && metadata.attributes.length > 0 && (
+                <>
+                  <h5>Attributes</h5>
+                  <div className="attributes-table-container">
+                    <table className="attributes-table">
+                      <thead>
+                        <tr>
+                          <th>Trait</th>
+                          <th>Value</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {metadata.attributes.map((attr) => (
+                          <tr key={`${attr.trait_type}-${attr.value}`}>
+                            <td>{attr.trait_type}</td>
+                            <td>{attr.value}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-        
-        <div className="token-info">
-          <div className="token-header">
-            <h2 className="token-name">{metadata.name || 'Unnamed NFT'}</h2>
-            {/* {metadata.id && <span className="token-id">#{metadata.id}</span>} */}
-          </div>
-          
-          <div className="token-description">
-            <p>{metadata.description || 'No description available'}</p>
-          </div>
-          
-          <div className="token-traits">
-            <h3>Traits</h3>
-            {renderAttributes()}
-          </div>
-        </div>
-      </div>
-      
+        </div>      
       <style jsx>{`
         .token-details {
           width: 100%;
@@ -244,74 +270,56 @@ const TokenDetails = ({ metadata }) => {
           color: #333;
         }
         
-        .traits-table-container {
+        .attributes-table-container {
           margin-top: 10px;
           margin-bottom: 15px;
           max-height: 200px;
           overflow-y: auto;
           border: 1px solid #eee;
           border-radius: 8px;
+          background: #fff;
         }
-        
-        .traits-table {
+        .attributes-table {
           width: 100%;
-          border-collapse: collapse;
+          border-collapse: collapse !important;
           font-size: 14px;
+          background: #fff;
         }
-        
-        .traits-table th {
-          background-color: #f5f5f5;
-          padding: 8px;
-          text-align: left;
-          border-bottom: 1px solid #ddd;
+        .attributes-table th,
+        .attributes-table td {
+          border: 1px solid #eee !important;
+          padding: 8px !important;
+          text-align: left !important;
+          background: #fff !important;
         }
-        
-        .traits-table td {
-          padding: 8px;
-          border-bottom: 1px solid #eee;
+        .attributes-table th {
+          background-color: #f5f5f5 !important;
+          font-weight: 600;
+          color: #374151;
         }
-        
-        .traits-table tr:last-child td {
-          border-bottom: none;
+        .attributes-table tr:last-child td {
+          border-bottom: none !important;
         }
-        
+        .attributes-table tr:hover td {
+          background-color: #f9fafb !important;
+        }
         .no-traits {
           color: #888;
           font-style: italic;
-          padding: 8px 0;
+          padding: 10px 0 0 0;
         }
-        
-        .token-error {
-          padding: 30px;
-          text-align: center;
-          background-color: #fff0f0;
-          border-radius: 8px;
-          color: #e53935;
-          font-weight: 500;
-          border: 1px dashed #ffcdd2;
-        }
-        
-        @media (max-width: 767px) {
-          .token-image-container {
-            padding-bottom: 0;
+        @media (max-width: 500px) {
+          .attributes-table {
+            font-size: 13px;
           }
-          
-          .token-image-wrapper {
-            padding-bottom: 75%; /* Smaller aspect ratio on mobile */
-          }
-          
-          .traits-table-container {
-            max-height: 150px;
-          }
-          
-          .token-traits h3 {
-            font-size: 16px;
-            margin-bottom: 10px;
-            margin-top: 15px;
+          .attributes-table th,
+          .attributes-table td {
+            padding: 7px 6px !important;
           }
         }
       `}</style>
-    </div>
+    </>
+    )
   );
 };
 

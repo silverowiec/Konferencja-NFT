@@ -391,30 +391,6 @@ export default function AttendLecture() {
                           <div className="token-details-container" style={{ marginTop: '30px' }}>
                             <h3>Your Token Details</h3>
                             <TokenDetails metadata={tokenMetadata} />
-                            
-                            {/* Add token actions for viewing on blockchain or in separate page */}
-                            <div className="token-actions">
-                              {tokenMetadata.id && (
-                                <a 
-                                  href={`/token/${tokenMetadata.id}`} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="view-token-link"
-                                >
-                                  View Full Token Page
-                                </a>
-                              )}
-                              {txHash && contractAddress && (
-                                <a 
-                                  href={`https://sepolia.etherscan.io/tx/${txHash}`}
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  className="view-transaction-link view-metadata-link"
-                                >
-                                  View Transaction on Etherscan
-                                </a>
-                              )}
-                            </div>
                           </div>
                         )}
                       </>
