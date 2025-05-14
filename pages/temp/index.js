@@ -1,9 +1,9 @@
-import Layout from '../components/common/Layout';
-import { useAuth } from '../contexts/AuthContext';
+import Layout from '../../components/common/Layout';
+import { useAuth } from '../../contexts/AuthContext';
 import { useState, useEffect } from 'react';
-import { getAllLectures } from '../lib/blockchain';
+import { getAllLectures } from '../../lib/blockchain';
 import Link from 'next/link';
-import MetaMaskWallet from '../components/common/MetaMaskWallet';
+import MetaMaskWallet from '../../components/common/MetaMaskWallet';
 
 export default function Home() {
   const { isLoggedIn } = useAuth();
@@ -99,9 +99,6 @@ export default function Home() {
               <p style={{ marginTop: '15px' }}>
                 Note: You can only access lectures through QR codes provided to you.
               </p>
-              
-              <div className="action-buttons">
-              </div>
             </div>
           )}
           

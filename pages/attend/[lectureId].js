@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/common/Layout';
-import { getLecture, getLastTokenForOwner, hasClaimed, getLectureByHash } from '../../lib/blockchain';
+import TokenDetails from '../../components/common/TokenDetails';
+import { getLecture, getLastTokenForOwner, hasClaimed, getLectureByHash, fetchMetadata, convertIpfsToHttpUrl } from '../../lib/blockchain';
 
 export default function AttendLecture() {
   const router = useRouter();
@@ -17,6 +18,10 @@ export default function AttendLecture() {
   const [walletConnected, setWalletConnected] = useState(false);
   const [contractAddress, setContractAddress] = useState('');
   const [txHash, setTxHash] = useState('');
+  
+  // State for token metadata
+  const [tokenMetadata, setTokenMetadata] = useState(null);
+  const [loadingMetadata, setLoadingMetadata] = useState(false);
   
   // Fetch lecture details when the component mounts and lectureId is available
   useEffect(() => {
@@ -52,6 +57,11 @@ export default function AttendLecture() {
           ...fetchedLecture
         });
         
+        // If user has wallet connected and has already claimed the token, fetch metadata
+        if (walletConnected && alreadyClaimed && fetchedLecture.tokenURI) {
+          fetchTokenMetadata(fetchedLecture.tokenURI);
+        }
+        
         setLoading(false);
       } catch (err) {
         console.error('Error fetching lecture:', err);
@@ -61,7 +71,7 @@ export default function AttendLecture() {
     }
     
     fetchLecture();
-  }, [lectureId]);
+  }, [lectureId, walletConnected, alreadyClaimed]);
   
   // Function to connect wallet
   const connectWallet = async () => {
@@ -89,6 +99,11 @@ export default function AttendLecture() {
           if (data.claimed > 0n) {
             setMintStatus('success');
             setMintMessage('You have already claimed this POAP!');
+            
+            // Fetch token metadata if token is already claimed
+            if (lecture && lecture.tokenURI) {
+              fetchTokenMetadata(lecture.tokenURI);
+            }
           }
         } catch (error) {
           console.error('Error checking claim status:', error);
@@ -98,6 +113,49 @@ export default function AttendLecture() {
     } catch (err) {
       console.error('Error connecting wallet:', err);
       setError(`Failed to connect wallet: ${err.message || 'Unknown error'}`);
+    }
+  };
+  
+  // Function to fetch token metadata
+  const fetchTokenMetadata = async (tokenURI) => {
+    if (!tokenURI) return;
+    
+    setLoadingMetadata(true);
+    console.log('Fetching metadata from URI:', tokenURI);
+    
+    try {
+      // Fetch and process metadata using the utility function
+      // This handles IPFS conversion automatically
+      const metadata = await fetchMetadata(tokenURI);
+      console.log('Fetched metadata:', metadata);
+      console.log('Image URL after processing:', metadata.image);
+      
+      // Add lecture ID to the metadata for reference
+      metadata.id = lectureId;
+      
+      // Add lecture name to metadata if available
+      if (lecture && lecture.name) {
+        metadata.lectureName = lecture.name;
+      }
+
+      // Add extra metadata about the claim for context
+      metadata.claimedAt = new Date().toISOString();
+      metadata.claimedBy = walletAddress;
+      
+      // Store the metadata
+      setTokenMetadata(metadata);
+    } catch (err) {
+      console.error('Error fetching token metadata:', err);
+      // Create minimal metadata with a placeholder image
+      setTokenMetadata({
+        id: lectureId,
+        name: 'NFT Token',
+        description: 'Token metadata could not be loaded',
+        image: 'https://placehold.co/400x400?text=Error',
+        attributes: []
+      });
+    } finally {
+      setLoadingMetadata(false);
     }
   };
   
@@ -134,6 +192,14 @@ export default function AttendLecture() {
       setMintStatus('success');
       setMintMessage('POAP minted successfully! Check your wallet to view your new POAP.');
       setAlreadyClaimed(await hasClaimed(lecture.lectureParam || lectureId, walletAddress));
+      
+      // Fetch token metadata after successful mint
+      if (lecture?.tokenURI) {
+        console.log('Mint successful! Fetching token metadata from URI:', lecture.tokenURI);
+        fetchTokenMetadata(lecture.tokenURI);
+      } else {
+        console.warn('No token URI available after successful mint');
+      }
     } catch (err) {
       console.error('Error minting POAP:', err);
       setMintStatus('error');
@@ -242,6 +308,20 @@ export default function AttendLecture() {
                         </p>
                       </div>
                     )}
+                    
+                    {/* Show token metadata if available */}
+                    {loadingMetadata && (
+                      <div className="metadata-loading" style={{ marginTop: '20px' }}>
+                        <p>Loading token metadata...</p>
+                      </div>
+                    )}
+                    
+                    {tokenMetadata && (
+                      <div className="token-details-container">
+                        <h3>Your Token Details</h3>
+                        <TokenDetails metadata={tokenMetadata} />
+                      </div>
+                    )}
                   </>
                 ) : (
                   // User hasn't claimed yet - show claim button or minting status
@@ -299,6 +379,20 @@ export default function AttendLecture() {
                             </p>
                           </div>
                         )}
+                        
+                        {/* Show token metadata for newly minted token if available */}
+                        {loadingMetadata && (
+                          <div className="metadata-loading" style={{ marginTop: '20px' }}>
+                            <p>Loading token details...</p>
+                          </div>
+                        )}
+                        
+                        {tokenMetadata && (
+                          <div className="token-details-container" style={{ marginTop: '30px' }}>
+                            <h3>Your Token Details</h3>
+                            <TokenDetails metadata={tokenMetadata} />
+                          </div>
+                        )}
                       </>
                     )}
                   </>
@@ -307,6 +401,112 @@ export default function AttendLecture() {
             )}
           </div>
         )}
+        
+        <style jsx>{`
+          .token-details-container {
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            margin-top: 30px;
+            width: 100%;
+          }
+          
+          .token-details-container h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 22px;
+            color: #333;
+          }
+          
+          .metadata-loading {
+            font-style: italic;
+            color: #777;
+            padding: 10px 0;
+          }
+          
+          .token-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+          }
+          
+          .view-token-link,
+          .view-metadata-link {
+            display: inline-flex;
+            align-items: center;
+            padding: 10px 16px;
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            color: #333;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+          }
+          
+          .view-token-link {
+            background-color: #e8f4fd;
+            border-color: #a4d4ff;
+            color: #0070f3;
+            font-weight: 500;
+          }
+          
+          .view-token-link:hover {
+            background-color: #d1e8fb;
+            box-shadow: 0 2px 5px rgba(0, 112, 243, 0.1);
+          }
+          
+          .view-metadata-link:hover {
+            background-color: #f0f0f0;
+            border-color: #ccc;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+          }
+          
+          .view-transaction-link {
+            background-color: #f5f9f7;
+            border-color: #d0e9e2;
+            color: #278a6f;
+          }
+          
+          .view-transaction-link:hover {
+            background-color: #e5f4ef;
+            border-color: #b8decd;
+            color: #1e6f59;
+          }
+          
+          /* Ensure proper spacing inside the card */
+          :global(.token-details .token-card) {
+            margin-top: 10px;
+          }
+          
+          /* Fix traits table appearance */
+          :global(.traits-table-container) {
+            border: 1px solid #eee !important;
+            margin-top: 10px !important;
+          }
+          
+          :global(.traits-table th) {
+            background-color: #f5f5f5 !important;
+            padding: 8px !important;
+          }
+          
+          :global(.traits-table td) {
+            padding: 8px !important;
+          }
+          
+          /* Remove extra padding in mobile view */
+          @media (max-width: 767px) {
+            :global(.token-details) {
+              padding: 0;
+            }
+            
+            .token-actions {
+              flex-direction: column;
+              gap: 10px;
+            }
+          }
+        `}</style>
       </div>
     </Layout>
   );
