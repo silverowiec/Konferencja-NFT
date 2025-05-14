@@ -49,6 +49,11 @@ contract KonferencjaNFT is ERC721, ERC721Enumerable, ERC721URIStorage, AccessCon
             safeMint(to[i], uri[i]);
     }
 
+    function burn(uint256 tokenId) public onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
+        require(block.timestamp)
+        _burn(tokenId);
+    }
+
     // The following functions are overrides required by Solidity.
 
     function _update(address to, uint256 tokenId, address auth)

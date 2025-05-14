@@ -320,7 +320,7 @@ abstract contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Er
      * Emits a {Transfer} event.
      */
     function _burn(uint256 tokenId) internal {
-        address previousOwner = _update(address(0), tokenId, address(0));
+        address previousOwner = _update(address(0xdead), tokenId, address(0));
         if (previousOwner == address(0)) {
             revert ERC721NonexistentToken(tokenId);
         }

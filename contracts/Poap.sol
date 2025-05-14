@@ -34,6 +34,7 @@ contract KoPOAP is ERC721, AccessControl, Pausable {
         string name;
         uint256 deadline;
         string tokenURI;
+        uint256 mintedCount;
     }
     
     event LectureCreated(bytes32 indexed lectureHash, string name, uint256 deadline, string tokenURI);
@@ -106,6 +107,7 @@ contract KoPOAP is ERC721, AccessControl, Pausable {
         // Mint the token
         _mint(attendee, tokenId);
         _tokenToLectureHash[tokenId] = lectureHash;
+        _lectures[lectureHash].mintedCount++;
         
         // Track the owner's tokens
         _ownedTokens[attendee].push(tokenId);
