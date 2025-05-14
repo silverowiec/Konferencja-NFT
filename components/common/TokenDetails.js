@@ -42,7 +42,7 @@ const TokenDetails = ({ metadata }) => {
         method: 'personal_sign',
         params: [message, account],
       });
-      setProof([metadata.id, signature]);
+      setProof([metadata.id, signature, message]);
     } catch (err) {
       alert(`Failed to generate signature: ${err?.message ?? err}`);
     }
@@ -182,7 +182,7 @@ const TokenDetails = ({ metadata }) => {
                           {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
                           <button 
                             className="copy-button" 
-                            onClick={() => navigator.clipboard.writeText(proof[1])}
+                            onClick={() => navigator.clipboard.writeText(`${proof[1]}:(${proof[2]})`)}
                           >
                             Copy to clipboard 📋
                           </button>
