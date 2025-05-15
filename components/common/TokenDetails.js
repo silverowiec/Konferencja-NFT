@@ -15,6 +15,7 @@ import NftPlaceholder from './NftPlaceholder';
 const TokenDetails = ({ metadata }) => {
   const [imageError, setImageError] = useState(false);
   const [proof, setProof] = useState([]);
+  const [account, setAccount] = useState(null);
   
   // Helper to get contract address from window or env
   const getContractAddress = () => {
@@ -34,6 +35,7 @@ const TokenDetails = ({ metadata }) => {
       // Request accounts
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       const account = accounts[0];
+      setAccount(account);
       const contractAddress = getContractAddress();
       const tokenId = metadata.id;
       const message = `I am owner of ${contractAddress} token ID ${tokenId}`;
@@ -182,7 +184,7 @@ const TokenDetails = ({ metadata }) => {
                           {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
                           <button 
                             className="copy-button" 
-                            onClick={() => navigator.clipboard.writeText(`${proof[1]}:(${proof[2]})`)}
+                            onClick={() => navigator.clipboard.writeText(`${proof[1]}:(${proof[2]}):${account}`)}
                           >
                             Copy to clipboard 📋
                           </button>

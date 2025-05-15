@@ -4,6 +4,57 @@ import { useState, useEffect } from 'react';
 import { getAllLectures } from '../lib/blockchain';
 import Link from 'next/link';
 import MetaMaskWallet from '../components/common/MetaMaskWallet';
+import { ethers } from 'ethers';
+
+function VerifyProofForm() {
+  const [input, setInput] = useState('');
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+
+  const handleVerify = (e) => {
+    e.preventDefault();
+    setResult(null);
+    setError(null);
+    // Parse proof: SIGNATURE:(MESSAGE):ADDRESS
+    const match = input.match(/^([0-9a-fA-Fx]+):\((.+)\):0x([0-9a-fA-F]{40})$/);
+    if (!match) {
+      setError('Invalid proof format.');
+      return;
+    }
+    const signature = match[1];
+    const message = match[2];
+    const address = match[3];
+    try {
+      // ethers v6: verifyMessage is a top-level function, not under utils
+      const recovered = ethers.verifyMessage(message, signature).substring(2).toLowerCase();
+      setResult(address === recovered ? recovered : null);
+    } catch (err) {
+      console.error('Verification error:', err);
+      setError(`Verification failed. Check the proof format and try again: ${err?.message || err}`);
+    }
+  };
+
+  return (
+    <form onSubmit={handleVerify} style={{ marginTop: 20 }}>
+      <textarea
+        value={input}
+        onChange={e => setInput(e.target.value)}
+        rows={3}
+        style={{ width: '100%', fontFamily: 'monospace', fontSize: 15, marginBottom: 10 }}
+        placeholder="Paste proof here: SIGNATURE:(MESSAGE):ADDRESS"
+      />
+      <button type="submit" className="btn-primary">Verify</button>
+      {result && (
+        <div style={{ marginTop: 15, color: 'green' }}>
+          <b>Signature is valid!</b>
+        </div>
+      )}
+      {error && (
+        <div style={{ marginTop: 15, color: 'red' }}>{error}</div>
+      )}
+    </form>
+  );
+}
 
 export default function Home() {
   const { isLoggedIn } = useAuth();
@@ -60,6 +111,13 @@ export default function Home() {
             onClick={() => setActiveTab('wallet')}
           >
             My Tokens
+          </button>
+          <button 
+            type="button"
+            className={`tab ${activeTab === 'verify' ? 'active' : ''}`}
+            onClick={() => setActiveTab('verify')}
+          >
+            Verify
           </button>
         </div>
 
@@ -141,6 +199,14 @@ export default function Home() {
           {/* Wallet tab content - MetaMask integration */}
           {activeTab === 'wallet' && (
             <MetaMaskWallet />
+          )}
+          {/* Verify tab content */}
+          {activeTab === 'verify' && (
+            <div className="card">
+              <h2>Verify Token Ownership</h2>
+              <p>Paste your proof below (format: <code>SIGNATURE:(MESSAGE):ADDRESS)</code></p>
+              <VerifyProofForm />
+            </div>
           )}
         </div>
         
