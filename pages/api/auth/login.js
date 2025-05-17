@@ -1,12 +1,13 @@
 // Secure login API endpoint
 import { serialize } from 'cookie';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 
 // The admin username from environment or default value
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 
-// The admin password - MUST be set in environment variables
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+// The admin password hash - MUST be set in environment variables
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
 
 // Secret key for session token generation
 const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
@@ -33,9 +34,9 @@ export default async function handler(req, res) {
       });
     }
 
-    // Check if ADMIN_PASSWORD is configured
-    if (!ADMIN_PASSWORD) {
-      console.error('ADMIN_PASSWORD environment variable is not set');
+    // Check if ADMIN_PASSWORD_HASH is configured
+    if (!ADMIN_PASSWORD_HASH) {
+      console.error('ADMIN_PASSWORD_HASH environment variable is not set');
       return res.status(500).json({ 
         success: false, 
         message: 'Authentication system not properly configured' 
@@ -47,11 +48,8 @@ export default async function handler(req, res) {
       Buffer.from(username), 
       Buffer.from(ADMIN_USERNAME)
     );
-    
-    const passwordMatch = crypto.timingSafeEqual(
-      Buffer.from(password),
-      Buffer.from(ADMIN_PASSWORD)
-    );
+    // Compare password hash
+    const passwordMatch = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
 
     if (!(usernameMatch && passwordMatch)) {
       return res.status(401).json({ 
