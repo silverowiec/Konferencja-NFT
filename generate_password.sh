@@ -1,0 +1,1 @@
+node -e "console.log(require('bcryptjs').hashSync('yourpassword', 10))
