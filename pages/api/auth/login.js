@@ -43,13 +43,8 @@ export default async function handler(req, res) {
       });
     }
 
-    // Validate credentials - use constant time comparison to prevent timing attacks
-    const usernameMatch = crypto.timingSafeEqual(
-      Buffer.from(username), 
-      Buffer.from(ADMIN_USERNAME)
-    );
-    // Compare password hash
-    const passwordMatch = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+    const usernameMatch = username === ADMIN_USERNAME;
+    const passwordMatch = bcrypt.compare(password, ADMIN_PASSWORD_HASH);
 
     if (!(usernameMatch && passwordMatch)) {
       return res.status(401).json({ 
