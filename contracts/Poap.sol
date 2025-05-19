@@ -32,11 +32,12 @@ contract KoPOAP is ERC721, AccessControl, Pausable {
     struct LectureInfo {
         bytes32 lectureHash;
         string name;
+        uint256 start;
         uint256 deadline;
         string tokenURI;
     }
     
-    event LectureCreated(bytes32 indexed lectureHash, string name, uint256 deadline, string tokenURI);
+    event LectureCreated(bytes32 indexed lectureHash, string name, uint256 start, uint256 deadline, string tokenURI);
     event POAPClaimed(bytes32 indexed lectureHash, address indexed attendee, uint256 tokenId);
 
     constructor(
@@ -54,10 +55,11 @@ contract KoPOAP is ERC721, AccessControl, Pausable {
     /**
      * @dev Creates a new lecture POAP
      * @param name Name of the lecture
+     * @param start Start time of the lecture
      * @param deadline Time until when POAPs can be claimed
      * @param uri URI for the token metadata
      */
-    function createLecture(string memory name, uint256 deadline, string memory uri)
+    function createLecture(string memory name, uint256 start, uint256 deadline, string memory uri)
         public 
         onlyRole(MINTER_ROLE) 
         whenNotPaused 
@@ -70,13 +72,14 @@ contract KoPOAP is ERC721, AccessControl, Pausable {
         _lectures[lectureHash] = LectureInfo({
             lectureHash: lectureHash,
             name: name,
+            start: start,
             deadline: deadline,
             tokenURI: uri
         });
         
         lectureCounter.push(lectureHash);
                 
-        emit LectureCreated(lectureHash, name, deadline, uri);
+        emit LectureCreated(lectureHash, name, start, deadline, uri);
     }
     
     
@@ -93,6 +96,7 @@ contract KoPOAP is ERC721, AccessControl, Pausable {
         returns (uint256)
     {
         require(_lectures[lectureHash].lectureHash != bytes32(0), "Invalid lecture ID");
+        require(_lectures[lectureHash].start <= block.timestamp, "Lecture has not started yet");
         require(block.timestamp <= _lectures[lectureHash].deadline, "Lecture is not active");
         require(_claimed[lectureHash][attendee] == 0, "POAP already claimed");
         
@@ -125,6 +129,7 @@ contract KoPOAP is ERC721, AccessControl, Pausable {
         onlyRole(MINTER_ROLE) 
         whenNotPaused 
     {
+        require(_lectures[lectureHash].start != block.timestamp, "Lecture has not started yet");
         require(block.timestamp <= _lectures[lectureHash].deadline, "Lecture is not active or invalid");
         
         for (uint256 i = 0; i < attendees.length; i++) {

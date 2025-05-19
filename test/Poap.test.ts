@@ -16,6 +16,7 @@ describe("KoPOAP", () => {
     let attendees: SignerWithAddress[];
     let lectureName: string;
     let deadline: bigint;
+    let start: bigint;
     let tokenURI: string;
     let lectureHash: string;
 
@@ -41,6 +42,7 @@ describe("KoPOAP", () => {
         // Setup for lecture creation
         lectureName = "Test Lecture";
         deadline = BigInt(await time.latest()) + BigInt(86400); // 1 day from now
+        start = BigInt(await time.latest())
         tokenURI = "ipfs://test-uri/";
         
         // Calculate the expected lecture hash
@@ -62,7 +64,7 @@ describe("KoPOAP", () => {
 
     describe("Lecture Creation", () => {
         it("Should allow minter to create a lecture", async () => {
-            const tx = await poap.connect(owner).createLecture(lectureName, deadline, tokenURI);
+            const tx = await poap.connect(owner).createLecture(lectureName, start, deadline, tokenURI);
 
             // Check lecture was created and added to counter
             expect(await poap.getLectureCount()).to.equal(1);
@@ -70,12 +72,12 @@ describe("KoPOAP", () => {
             // Verify event was emitted with correct hash
             await expect(tx)
                 .to.emit(poap, "LectureCreated")
-                .withArgs(lectureHash, lectureName, deadline, tokenURI);
+                .withArgs(lectureHash, lectureName, start, deadline, tokenURI);
         });
 
         it("Should revert if non-minter tries to create a lecture", async () => {
             await expect(
-                poap.connect(attendees[0]).createLecture("Unauthorized", deadline, "uri")
+                poap.connect(attendees[0]).createLecture("Unauthorized", start, deadline, "uri")
             ).to.be.revertedWithCustomError(poap, "AccessControlUnauthorizedAccount");
         });
 
@@ -83,17 +85,17 @@ describe("KoPOAP", () => {
             await poap.connect(owner).pause();
 
             await expect(
-                poap.connect(owner).createLecture("While Paused", deadline, "uri")
+                poap.connect(owner).createLecture("While Paused", start, deadline, "uri")
             ).to.be.revertedWithCustomError(poap, "EnforcedPause");
         });
         
         it("Should revert if lecture already exists", async () => {
             // Create a lecture first
-            await poap.connect(owner).createLecture(lectureName, deadline, tokenURI);
+            await poap.connect(owner).createLecture(lectureName, start, deadline, tokenURI);
             
             // Try to create the same lecture again
             await expect(
-                poap.connect(owner).createLecture(lectureName, deadline, tokenURI)
+                poap.connect(owner).createLecture(lectureName, start, deadline, tokenURI)
             ).to.be.revertedWith("Lecture already exists");
         });
     });
@@ -101,7 +103,7 @@ describe("KoPOAP", () => {
     describe("Minting POAPs", () => {
         beforeEach(async () => {
             // Create a lecture for tests
-            await poap.connect(owner).createLecture(lectureName, deadline, tokenURI);
+            await poap.connect(owner).createLecture(lectureName, start, deadline, tokenURI);
         });
 
         it("Should allow owner to mint a POAP", async () => {
@@ -158,7 +160,7 @@ describe("KoPOAP", () => {
                 )
             );
             
-            await poap.connect(owner).createLecture(pastLectureName, pastDeadline, pastLectureURI);
+            await poap.connect(owner).createLecture(pastLectureName, start, pastDeadline, pastLectureURI);
             
             // Try to mint
             await expect(
@@ -195,7 +197,7 @@ describe("KoPOAP", () => {
 
     describe("Batch Minting POAPs", () => {
         beforeEach(async () => {
-            await poap.connect(owner).createLecture(lectureName, deadline, tokenURI);
+            await poap.connect(owner).createLecture(lectureName, start, deadline, tokenURI);
         });
 
         it("Should mint POAPs to multiple attendees", async () => {
@@ -262,7 +264,7 @@ describe("KoPOAP", () => {
                 )
             );
             
-            await poap.connect(owner).createLecture(pastLectureName, pastDeadline, pastLectureURI);
+            await poap.connect(owner).createLecture(pastLectureName, start, pastDeadline, pastLectureURI);
 
             await expect(
                 poap.connect(owner).batchMintPOAP(pastLectureHash, [attendees[0].address])
@@ -294,7 +296,7 @@ describe("KoPOAP", () => {
 
         beforeEach(async () => {
             // Create a lecture
-            await poap.connect(owner).createLecture(lectureName, deadline, tokenURI);
+            await poap.connect(owner).createLecture(lectureName, start, deadline, tokenURI);
             
             // Mint a token to test URI
             const tx = await poap.connect(owner).mintPOAP(lectureHash, attendees[0].address);
@@ -325,14 +327,14 @@ describe("KoPOAP", () => {
     
     describe("Lecture Queries", () => {
         beforeEach(async () => {
-            await poap.connect(owner).createLecture(lectureName, deadline, tokenURI);
+            await poap.connect(owner).createLecture(lectureName, start, deadline, tokenURI);
         });
 
         it("Should return correct lecture count", async () => {
             expect(await poap.getLectureCount()).to.equal(1);
 
             // Add another lecture
-            await poap.connect(owner).createLecture("Another Lecture", deadline, "uri2");
+            await poap.connect(owner).createLecture("Another Lecture", start, deadline, "uri2");
 
             expect(await poap.getLectureCount()).to.equal(2);
             expect((await poap.getLecture(0))[0]).to.equal(lectureHash);
@@ -380,7 +382,7 @@ describe("KoPOAP", () => {
 
         it("Should prevent minting when paused", async () => {
             // Create a lecture
-            await poap.connect(owner).createLecture(lectureName, deadline, tokenURI);
+            await poap.connect(owner).createLecture(lectureName, start, deadline, tokenURI);
 
             // Pause contract
             await poap.connect(owner).pause();
