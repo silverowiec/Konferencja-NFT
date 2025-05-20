@@ -36,16 +36,12 @@ export default function CreateLecture() {
   }
   
   return (
-    <Layout title="Create Lecture - POAP Lecture App">
+    <Layout title="Create New Lecture - POAP Lecture App">
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h1>Create New Lecture</h1>
-          <Link href="/admin">
-            <button className="btn-secondary">Back to Dashboard</button>
-          </Link>
+        <h1 style={{ color: '#00838f', fontWeight: 700, fontSize: '2rem', letterSpacing: '-1px', fontFamily: 'Inter, Roboto, Open Sans, Arial, sans-serif', marginBottom: '24px' }}>Create New Lecture</h1>
+        <div className="card" style={{ background: '#fff', borderRadius: '14px', boxShadow: '0 2px 12px rgba(0,131,143,0.07)', border: '1px solid #e0f7fa', marginBottom: '32px', padding: '28px 24px' }}>
+          <LectureForm onLectureCreated={handleLectureCreated} />
         </div>
-        
-        <LectureForm onLectureCreated={handleLectureCreated} />
         
         {createdLectureId && (
           <div className="card" style={{ marginTop: '20px' }}>

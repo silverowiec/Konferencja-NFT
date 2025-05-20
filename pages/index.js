@@ -43,7 +43,7 @@ function VerifyProofForm() {
         style={{ width: '100%', fontFamily: 'monospace', fontSize: 15, marginBottom: 10 }}
         placeholder="Paste proof here: SIGNATURE:(MESSAGE):ADDRESS"
       />
-      <button type="submit" className="btn-primary">Verify</button>
+      <button type="submit" className="btn-primary" style={{ background: '#00838f', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 22px', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,131,143,0.08)' }}>Verify</button>
       {result && (
         <div style={{ marginTop: 15, color: 'green' }}>
           <b>Signature is valid!</b>
@@ -98,7 +98,7 @@ export default function Home() {
         
         {/* Tabs for different sections */}
         <div className="tabs">
-          <button 
+          <button
             type="button"
             className={`tab ${activeTab === 'home' ? 'active' : ''}`}
             onClick={() => setActiveTab('home')}
@@ -130,7 +130,8 @@ export default function Home() {
               
               <div className="scan-qr-button">
                 <Link href="/scan">
-                  <button type="button" className="btn-primary">
+                  <button type="button" className="btn-primary"                 style={{ background: '#00838f', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 22px', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,131,143,0.08)' }}
+                  >
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" style={{ marginRight: '10px' }}>
                       <rect x="3" y="3" width="7" height="7" rx="1" />
                       <rect x="14" y="3" width="7" height="7" rx="1" />
@@ -190,7 +191,9 @@ export default function Home() {
               
               <div style={{ marginTop: '20px' }}>
                 <Link href="/admin">
-                  <button type="button" className="btn-primary">Go to Admin Dashboard</button>
+                  <button type="button" className="btn-primary" 
+                                  style={{ background: '#00838f', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 22px', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,131,143,0.08)' }}
+>Go to Admin Dashboard</button>
                 </Link>
               </div>
             </div>
@@ -354,16 +357,16 @@ export default function Home() {
             border-bottom: 2px solid transparent;
             transition: all 0.2s;
           }
-          
-          .tab:hover {
-            color: #3b82f6;
+     .tab:hover {
+            color: #00838f;
           }
           
           .tab.active {
-            color: #3b82f6;
-            border-bottom: 2px solid #3b82f6;
+            color: #00838f;
+            border-bottom: 2px solid #00838f;
             font-weight: bold;
           }
+          
           
           .tab-content {
             padding: 10px 0;

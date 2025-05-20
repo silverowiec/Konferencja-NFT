@@ -219,6 +219,7 @@ const MetaMaskWallet = () => {
             className="btn-connect-wallet"
             onClick={connectWallet}
             disabled={isConnecting}
+            style={{ background: '#00838f', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 22px', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,131,143,0.08)' }}
           >
             {isConnecting ? (
               'Connecting...'

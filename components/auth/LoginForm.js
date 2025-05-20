@@ -55,7 +55,7 @@ export default function LoginForm() {
           />
         </div>
         
-        <button type="submit" disabled={isLoading}>
+        <button type="submit" disabled={isLoading} style={{ background: '#00838f', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 22px', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,131,143,0.08)' }}>
           {isLoading ? 'Logging in...' : 'Login'}
         </button>
       </form>

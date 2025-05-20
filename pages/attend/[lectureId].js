@@ -316,7 +316,7 @@ export default function AttendLecture() {
   return (
     <Layout title={"Attend Lecture - POAP Lecture App"}>
       <div>
-        <h1>Attend Lecture & Claim POAP</h1>
+        <h1 style={{ color: '#00838f', fontWeight: 700, fontSize: '2.1rem', letterSpacing: '-1px', marginBottom: '24px', fontFamily: 'Inter, Roboto, Open Sans, Arial, sans-serif' }}>Attend Lecture & Claim POAP</h1>
         
         {loading && <p>Loading lecture details...</p>}
         {error && <p className="error">{error}</p>}
@@ -328,28 +328,26 @@ export default function AttendLecture() {
         )}
         
         {lecture && (
-          <div className="card">
-            <h2>{lecture.name}</h2>
-            <p>Mintable from: {formatDate(lecture.startTimestamp)}</p>
-            <p>Mintable until: {formatDate(lecture.timestamp)}</p>
-            <p>Status: {lecture.active ? <p style={{color:'green'}}>Active</p> : <p className='error'>Inactive</p>}</p>
-            
-            {!lecture.active && (
-              lecture.startTimestamp && Number(lecture.startTimestamp) > Math.floor(Date.now() / 1000) ? (
-                <p className="error">
-                  This lecture is not yet active. It will be active on {formatDate(lecture.startTimestamp)}.
-                </p>
+          <div className="card" style={{ background: '#fff', borderRadius: '14px', boxShadow: '0 2px 12px rgba(0,131,143,0.07)', border: '1px solid #e0f7fa', marginBottom: '32px', padding: '28px 24px' }}>
+            <h2 style={{ color: '#00838f', fontWeight: 700, fontSize: '1.4rem', marginBottom: '10px', fontFamily: 'Inter, Roboto, Open Sans, Arial, sans-serif' }}>{lecture.name}</h2>
+            <p style={{ color: '#555', marginBottom: 4 }}>Mintable from: <span style={{ color: '#00838f' }}>{formatDate(lecture.startTimestamp)}</span></p>
+            <p style={{ color: '#555', marginBottom: 4 }}>Mintable until: <span style={{ color: '#00838f' }}>{formatDate(lecture.timestamp)}</span></p>
+            <p style={{ marginBottom: 4 }}>
+              Status: {lecture.active ? (
+                <span style={{ color: '#00838f', fontWeight: 600 }}>Active</span>
               ) : (
-                <p className="error">
-                  This lecture is no longer active. It was active until {formatDate(lecture.timestamp)}.
-                </p>
-              )
-            )}
+                <span style={{ color: '#b71c1c', fontWeight: 600 }}>
+                  {lecture.startTimestamp && Number(lecture.startTimestamp) > Math.floor(Date.now() / 1000)
+                    ? `This lecture is not yet active. It will be active on ${formatDate(lecture.startTimestamp)}.`
+                    : `This lecture is no longer active. It was active until ${formatDate(lecture.timestamp)}.`}
+                </span>
+              )}
+            </p>
             
             {lecture.active && !walletConnected && (
               <div style={{ marginTop: '20px' }}>
                 <p>Connect your Ethereum wallet to claim your POAP for attending this lecture.</p>
-                <button type="button" onClick={connectWallet} style={{ marginTop: '10px' }}>
+                <button type="button" onClick={connectWallet} style={{ marginTop: '10px', backgroundColor: '#00838f', color: '#fff', padding: '10px 20px', borderRadius: '8px', border: 'none', fontSize: '16px', cursor: 'pointer', transition: 'background-color 0.3s' }}>
                   Connect Wallet
                 </button>
               </div>
@@ -376,7 +374,7 @@ export default function AttendLecture() {
                       <button type="button" onClick={() => verifySpecialCode(code)} disabled={verifyingCode || !code}>
                         {verifyingCode ? 'Verifying...' : 'Verify Code'}
                       </button>
-                      <button type="button" onClick={handleScanQr} disabled={verifyingCode}>
+                      <button type="button" onClick={handleScanQr} disabled={verifyingCode} style={{ background: '#00838f', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 22px', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,131,143,0.08)' }}>
                         Scan QR
                       </button>
                     </div>
@@ -429,6 +427,7 @@ export default function AttendLecture() {
                           onClick={importTokenToMetaMask}
                           type="button"
                           className="btn-secondary"
+                          style={{ backgroundColor: '#e0f7fa', color: '#00695c', padding: '10px 20px', borderRadius: '8px', border: 'none', fontSize: '16px', cursor: 'pointer', transition: 'background-color 0.3s' }}
                         >
                           Import Token to MetaMask
                         </button>
@@ -462,7 +461,7 @@ export default function AttendLecture() {
                           type="button"
                           onClick={mintPOAP}
                           className="btn-success"
-                          style={{ marginTop: '10px' }}
+                          style={{ marginTop: '10px', backgroundColor: '#00838f', color: '#fff', padding: '10px 20px', borderRadius: '8px', border: 'none', fontSize: '16px', cursor: 'pointer', transition: 'background-color 0.3s' }}
                           disabled={!codeVerified}
                         >
                           Claim POAP
@@ -477,7 +476,7 @@ export default function AttendLecture() {
                           type="button"
                           disabled
                           className="btn-success"
-                          style={{ marginTop: '10px' }}
+                          style={{ marginTop: '10px', backgroundColor: '#00838f', color: '#fff', padding: '10px 20px', borderRadius: '8px', border: 'none', fontSize: '16px', cursor: 'pointer', transition: 'background-color 0.3s' }}
                         >
                           Minting...
                         </button>
@@ -520,6 +519,7 @@ export default function AttendLecture() {
                               type="button"
                               onClick={importTokenToMetaMask} 
                               className="btn-secondary"
+                              style={{ backgroundColor: '#e0f7fa', color: '#00695c', padding: '10px 20px', borderRadius: '8px', border: 'none', fontSize: '16px', cursor: 'pointer', transition: 'background-color 0.3s' }}
                             >
                               Import Token to MetaMask
                             </button>

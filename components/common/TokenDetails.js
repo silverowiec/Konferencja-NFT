@@ -191,7 +191,9 @@ const TokenDetails = ({ metadata }) => {
                         </div>
                       </div>
                     ) || (
-                      <button type="button" className="btn-primary" style={{marginTop: 16}} onClick={handleGenerateProof}>
+                      <button                 style={{ background: '#00838f', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 22px', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,131,143,0.08)' }}
+
+                      type="button" className="btn-primary" onClick={handleGenerateProof}>
                         Generate Proof
                       </button>
                     )}

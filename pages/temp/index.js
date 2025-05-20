@@ -129,7 +129,9 @@ export default function Home() {
               
               <div style={{ marginTop: '20px' }}>
                 <Link href="/admin">
-                  <button type="button" className="btn-primary">Go to Admin Dashboard</button>
+                  <button type="button" className="btn-primary"
+                                  style={{ background: '#00838f', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 22px', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,131,143,0.08)' }}
+>Go to Admin Dashboard</button>
                 </Link>
               </div>
             </div>
@@ -287,12 +289,12 @@ export default function Home() {
           }
           
           .tab:hover {
-            color: #3b82f6;
+            color: #00838f;
           }
           
           .tab.active {
-            color: #3b82f6;
-            border-bottom: 2px solid #3b82f6;
+            color: #00838f;
+            border-bottom: 2px solid #00838f;
             font-weight: bold;
           }
           
