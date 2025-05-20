@@ -45,8 +45,8 @@ export default function LectureList({ refresh }) {
       try {
         setLoading(true);
         const fetchedLectures = await getAllLectures();
-        // Sort by timestamp (newest first)
-        fetchedLectures.sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
+        // Sort by startTimestamp (newest first)
+        fetchedLectures.sort((a, b) => Number(b.startTimestamp) - Number(a.startTimestamp));
         setLectures(fetchedLectures);
         setLoading(false);
         console.log('Fetched lectures:', fetchedLectures);
