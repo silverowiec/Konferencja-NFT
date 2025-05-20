@@ -72,8 +72,35 @@ export default function Layout({ children, title = 'POAP Lecture App' }) {
       </header>
 
       <main className="container" style={{ minHeight: 'calc(100vh - 160px)', padding: '20px 0' }}>
-      <div className="card" style={{background:'#fffbe6',border:'1px solid #ffe58f',fontWeight:'bold',fontSize:'1rem',color:'#ad8b00'}}>
-          Always check the contract address. Official POAP contract address is: <a href={process.env.NEXT_PUBLIC_BLOCK_EXPLORER_ACCOUNT_URL+process.env.NEXT_PUBLIC_CONTRACT_ADDRESS} style={{fontFamily:'monospace'}}>{process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}</a>
+        <div
+          className="card"
+          style={{
+            background: '#fffbe6',
+            border: '1px solid #ffe58f',
+            fontWeight: 'bold',
+            fontSize: '1rem',
+            color: '#ad8b00',
+            wordBreak: 'break-all', // ensures long words/addresses wrap
+            overflowWrap: 'break-word', // ensures wrapping on mobile
+          }}
+        >
+          Always check the contract address. Official POAP contract address is:{' '}
+          <a
+            href={
+              process.env.NEXT_PUBLIC_BLOCK_EXPLORER_ACCOUNT_URL +
+              process.env.NEXT_PUBLIC_CONTRACT_ADDRESS
+            }
+            style={{
+              fontFamily: 'monospace',
+              wordBreak: 'break-all',
+              overflowWrap: 'break-word',
+              display: 'inline-block',
+              maxWidth: '100%',
+              verticalAlign: 'bottom',
+            }}
+          >
+            {process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}
+          </a>
         </div>
         {isMounted && children}
       </main>
@@ -83,6 +110,16 @@ export default function Layout({ children, title = 'POAP Lecture App' }) {
           <p>&copy; {new Date().getFullYear()} Lecture POAP App</p>
         </div>
       </footer>
+      <style jsx>{`
+        @media (max-width: 600px) {
+          .card a {
+            word-break: break-all;
+            overflow-wrap: break-word;
+            display: inline-block;
+            max-width: 100%;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import Layout from '../../components/common/Layout';
 import TokenDetails from '../../components/common/TokenDetails';
 import QrScanner from '../../components/common/QrScanner';
-import { getLecture, getLastTokenForOwner, hasClaimed, getLectureByHash, fetchMetadata, convertIpfsToHttpUrl } from '../../lib/blockchain';
+import { hasClaimed, getLectureByHash, fetchMetadata } from '../../lib/blockchain';
 
 export default function AttendLecture() {
   const router = useRouter();
