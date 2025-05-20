@@ -290,6 +290,14 @@ export default function AttendLecture() {
   const handleQrScan = (scanned) => {
     setShowQrScanner(false);
     if (scanned) {
+      if (scanned.length >= 6) {
+        setCodeError(
+          'You are probably scanning session code. Please scan the individual claim QR code provided by the conference organizer.'
+        );
+        setCode('');
+        setCodeVerified(false);
+        return;
+      }
       setCode(scanned);
       verifySpecialCode(scanned);
     }

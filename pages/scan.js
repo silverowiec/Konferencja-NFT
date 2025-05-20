@@ -32,8 +32,12 @@ export default function ScanQrCode() {
     console.log('QR code scanned successfully:', decodedText);
     
     try {
-      // Check if the text is a URL
-      if (decodedText.startsWith('http')) {
+
+      if (decodedText.length <= 6) {
+        setError(
+          'You are probably scanning your individual POAP claim code. Please scan the session QR code provided by the conference organizer first.'
+        );
+      } else if (decodedText.startsWith('http')) {
         // Parse the URL to extract the lectureId/hash
         const url = new URL(decodedText);
         const pathParts = url.pathname.split('/');
