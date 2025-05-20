@@ -3,8 +3,10 @@ import { generateQRCode } from '../../lib/qrcode';
 
 export default function LectureForm({ onLectureCreated }) {
   const [name, setName] = useState('');
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [deadlineDate, setDeadlineDate] = useState('');
+  const [deadlineTime, setDeadlineTime] = useState('');
   const [tokenURI, setTokenURI] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,13 +23,15 @@ export default function LectureForm({ onLectureCreated }) {
     
     try {
       // Validate inputs
-      if (!name || !date || !time || !tokenURI) {
+      if (!name || !startDate || !startTime || !deadlineDate || !deadlineTime || !tokenURI) {
         throw new Error('All fields are required');
       }
       
-      // Convert date and time to timestamp (seconds since epoch)
-      const dateObj = new Date(`${date}T${time}`);
-      const timestamp = Math.floor(dateObj.getTime() / 1000);
+      // Convert start and deadline to timestamps (seconds since epoch)
+      const startObj = new Date(`${startDate}T${startTime}`);
+      const deadlineObj = new Date(`${deadlineDate}T${deadlineTime}`);
+      const start = Math.floor(startObj.getTime() / 1000);
+      const deadline = Math.floor(deadlineObj.getTime() / 1000);
       
       // Call the secure API endpoint for lecture creation
       const response = await fetch('/api/lectures/create', {
@@ -37,7 +41,8 @@ export default function LectureForm({ onLectureCreated }) {
         },
         body: JSON.stringify({
           name,
-          timestamp,
+          start,
+          deadline,
           tokenURI
         }),
       });
@@ -58,8 +63,10 @@ export default function LectureForm({ onLectureCreated }) {
       
       // Reset form
       setName('');
-      setDate('');
-      setTime('');
+      setStartDate('');
+      setStartTime('');
+      setDeadlineDate('');
+      setDeadlineTime('');
       setTokenURI('');
       
       // Notify parent component
@@ -96,24 +103,48 @@ export default function LectureForm({ onLectureCreated }) {
         </div>
         
         <div className="form-group">
-          <label htmlFor="date">Minting Deadline (Date)</label>
+          <label htmlFor="startDate">Start Date</label>
           <input
             type="date"
-            id="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
+            id="startDate"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
             disabled={loading}
             required
           />
         </div>
         
         <div className="form-group">
-          <label htmlFor="time">Minting Deadline (Time)</label>
+          <label htmlFor="startTime">Start Time</label>
           <input
             type="time"
-            id="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
+            id="startTime"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            disabled={loading}
+            required
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="deadlineDate">Deadline Date</label>
+          <input
+            type="date"
+            id="deadlineDate"
+            value={deadlineDate}
+            onChange={(e) => setDeadlineDate(e.target.value)}
+            disabled={loading}
+            required
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="deadlineTime">Deadline Time</label>
+          <input
+            type="time"
+            id="deadlineTime"
+            value={deadlineTime}
+            onChange={(e) => setDeadlineTime(e.target.value)}
             disabled={loading}
             required
           />

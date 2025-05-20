@@ -180,7 +180,7 @@ export default function Home() {
                   <div key={lecture.id} className="lecture-card">
                     <h3>{lecture.name}</h3>
                     <p>Date: {formatDate(lecture.timestamp)}</p>
-                    <p>Status: {lecture.active ? 'Active' : 'Inactive'}</p>
+                    <p>Status: {lecture.active ? <p style={{color:'green'}}>Active</p> : <p style={{color:'red'}}>Inactive</p>}</p>
                     <p style={{ marginTop: '10px' }}>
                       <Link href={`/attend/${lecture.lectureHash}`}>View Lecture</Link>
                     </p>

@@ -208,8 +208,9 @@ export default function LectureList({ refresh }) {
               <small>Hash: {lecture.hash.slice(0, 10)}...{lecture.hash.slice(-8)}</small>
             </p>
           )}
-          <p>Date: {formatDate(lecture.timestamp)}</p>
-          <p>Status: {Number.parseInt(lecture.timestamp) > Math.floor(Date.now() / 1000) ? 'Active' : 'Inactive'}</p>
+          <p>Date Start: {formatDate(lecture.startTimestamp)}</p>
+          <p>Date End: {formatDate(lecture.timestamp)}</p>
+          <p>Status: {Number.parseInt(lecture.timestamp) > Math.floor(Date.now() / 1000) ? <p style={{color:'green'}}>Active</p> : <p style={{color:'red'}}>Inactive</p>}</p>
           <p>Token URI: {lecture.tokenURI}</p>
           
           <div style={{ marginTop: '15px' }}>

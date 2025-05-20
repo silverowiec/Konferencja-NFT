@@ -18,10 +18,10 @@ export default async function handler(req, res) {
     }
 
     // Get lecture data from request body
-    const { name, timestamp, tokenURI } = req.body;
+    const { name, start, deadline, tokenURI } = req.body;
 
     // Validate inputs
-    if (!name || !timestamp || !tokenURI) {
+    if (!name || !start || !deadline || !tokenURI) {
       return res.status(400).json({ 
         success: false, 
         message: 'Missing required parameters' 
@@ -42,7 +42,8 @@ export default async function handler(req, res) {
     const lectureHash = await createLecture(
       adminPrivateKey,
       name,
-      timestamp,
+      start,
+      deadline,
       tokenURI
     );
 
