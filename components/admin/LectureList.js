@@ -284,7 +284,7 @@ export default function LectureList({ refresh }) {
                   </div>
                   <div className="metadata-info">
                     <p><strong>Name:</strong> {metadata[lecture.id].name || 'Unnamed'}</p>
-                    <p><strong>Description:</strong> {(metadata[lecture.id].description || 'No description').substring(0, 100)}...</p>
+                    <p><strong>Description:</strong> {(metadata[lecture.id].description || 'No description')}</p>
                     
                     {/* Display attributes table */}
                     {metadata[lecture.id].attributes && metadata[lecture.id].attributes.length > 0 && (
