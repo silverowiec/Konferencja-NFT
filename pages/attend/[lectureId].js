@@ -165,6 +165,7 @@ export default function AttendLecture() {
     
     setMintStatus('loading');
     setMintMessage('Minting your POAP...');
+    setTxHash(''); // Reset txHash on new mint attempt
     
     try {
       // Pass the original lecture parameter (ID or hash) that was used in the URL
@@ -181,7 +182,7 @@ export default function AttendLecture() {
       });
       
       const data = await response.json();
-      
+      console.log('Mint response:', data);
       if (!response.ok) {
         throw new Error(data.message || 'Failed to mint POAP');
       }
@@ -287,6 +288,27 @@ export default function AttendLecture() {
               <div style={{ marginTop: '20px' }}>
                 <p>Connected Wallet: {walletAddress}</p>
                 
+                {/* Always show txHash if present, after a mint */}
+                {txHash && (
+                  <div style={{ marginTop: '10px' }}>
+                    <a
+                      href={
+                        process.env.NEXT_PUBLIC_BLOCK_EXPLORER_TX_URL
+                          ? `${process.env.NEXT_PUBLIC_BLOCK_EXPLORER_TX_URL}${txHash}`
+                          : `https://etherscan.io/tx/${txHash}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="view-transaction-link"
+                    >
+                      🔍 View Transaction on Explorer
+                    </a>
+                    <p style={{ fontSize: '0.8rem', marginTop: '5px', color: '#666' }}>
+                      Transaction Hash: <code>{txHash}</code>
+                    </p>
+                  </div>
+                )}
+                
                 {alreadyClaimed ? (
                   // User has already claimed - show claimed message and import button
                   <>
@@ -366,6 +388,25 @@ export default function AttendLecture() {
                         <p className="success" style={{ marginTop: '10px' }}>
                           {mintMessage}
                         </p>
+                        {txHash && (
+                          <div style={{ marginTop: '10px' }}>
+                            <a
+                              href={
+                                process.env.NEXT_PUBLIC_BLOCK_EXPLORER_TX_URL
+                                  ? `${process.env.NEXT_PUBLIC_BLOCK_EXPLORER_TX_URL}${txHash}`
+                                  : `https://etherscan.io/tx/${txHash}`
+                              }
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="view-transaction-link"
+                            >
+                              View Transaction on Explorer
+                            </a>
+                            <p style={{ fontSize: '0.8rem', marginTop: '5px', color: '#666' }}>
+                              Transaction Hash: <code>{txHash}</code>
+                            </p>
+                          </div>
+                        )}
                         {contractAddress && (
                           <div style={{ marginTop: '15px' }}>
                             <button 
