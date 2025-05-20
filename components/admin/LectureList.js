@@ -210,7 +210,7 @@ export default function LectureList({ refresh }) {
           )}
           <p>Date Start: {formatDate(lecture.startTimestamp)}</p>
           <p>Date End: {formatDate(lecture.timestamp)}</p>
-          <p>Status: {Number.parseInt(lecture.timestamp) > Math.floor(Date.now() / 1000) ? <p style={{color:'green'}}>Active</p> : <p style={{color:'red'}}>Inactive</p>}</p>
+          <p>Status: {Number.parseInt(lecture.timestamp) > Math.floor(Date.now() / 1000) & Number.parseInt(lecture.startTimestamp) < Math.floor(Date.now() / 1000) ? <p style={{color:'green'}}>Active</p> : <p style={{color:'red'}}>Inactive</p>}</p>
           <p>Token URI: {lecture.tokenURI}</p>
           
           <div style={{ marginTop: '15px' }}>

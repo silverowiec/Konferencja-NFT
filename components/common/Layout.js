@@ -69,12 +69,12 @@ export default function Layout({ children, title = 'POAP Lecture App' }) {
             )}
           </div>
         </nav>
-        <div className="container" style={{background:'#fffbe6',border:'1px solid #ffe58f',padding:'20px 0',borderRadius:'6px',fontWeight:'bold',fontSize:'1rem',color:'#ad8b00'}}>
-          Always check the contract address. Official POAP contract address is: <a href={process.env.NEXT_PUBLIC_BLOCK_EXPLORER_ACCOUNT_URL+process.env.NEXT_PUBLIC_CONTRACT_ADDRESS} style={{fontFamily:'monospace'}}>{process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}</a>
-        </div>
       </header>
 
       <main className="container" style={{ minHeight: 'calc(100vh - 160px)', padding: '20px 0' }}>
+      <div className="card" style={{background:'#fffbe6',border:'1px solid #ffe58f',fontWeight:'bold',fontSize:'1rem',color:'#ad8b00'}}>
+          Always check the contract address. Official POAP contract address is: <a href={process.env.NEXT_PUBLIC_BLOCK_EXPLORER_ACCOUNT_URL+process.env.NEXT_PUBLIC_CONTRACT_ADDRESS} style={{fontFamily:'monospace'}}>{process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}</a>
+        </div>
         {isMounted && children}
       </main>
 
