@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/common/Layout';
 import TokenDetails from '../../components/common/TokenDetails';
+import QrScanner from '../../components/common/QrScanner';
 import { getLecture, getLastTokenForOwner, hasClaimed, getLectureByHash, fetchMetadata, convertIpfsToHttpUrl } from '../../lib/blockchain';
 
 export default function AttendLecture() {
@@ -22,6 +23,16 @@ export default function AttendLecture() {
   // State for token metadata
   const [tokenMetadata, setTokenMetadata] = useState(null);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
+  
+  // State for special code verification
+  const [code, setCode] = useState('');
+  const [codeVerified, setCodeVerified] = useState(false);
+  const [codeError, setCodeError] = useState('');
+  const [verifyingCode, setVerifyingCode] = useState(false);
+  const codeInputRef = useRef(null);
+  
+  // State for QR scanner modal
+  const [showQrScanner, setShowQrScanner] = useState(false);
   
   // Fetch lecture details when the component mounts and lectureId is available
   useEffect(() => {
@@ -243,6 +254,52 @@ export default function AttendLecture() {
     }
   };
 
+  // Add code verification function
+  const verifySpecialCode = async (inputCode) => {
+    setVerifyingCode(true);
+    setCodeError('');
+    setCodeVerified(false);
+    try {
+      const res = await fetch(`/api/verify-code?code=${encodeURIComponent(inputCode)}`);
+      const data = await res.json();
+      const text = data.result || '';
+      console.log('Code verification response:', text);
+      if (text.startsWith('A')) {
+        setCodeVerified(true);
+        setCodeError('');
+      } else if (text.startsWith('B')) {
+        setCodeVerified(false);
+        setCodeError('Wrong code. Please try again.');
+      } else {
+        setCodeVerified(false);
+        setCodeError('Unknown response from code verification.');
+      }
+    } catch (e) {
+      setCodeVerified(false);
+      setCodeError('Failed to verify code. Please try again.');
+    } finally {
+      setVerifyingCode(false);
+    }
+  };
+  
+  // Add QR code scan handler (using browser prompt for simplicity, can be replaced with real QR scanner)
+  const handleScanQr = () => {
+    setShowQrScanner(true);
+  };
+  
+  const handleQrScan = (scanned) => {
+    setShowQrScanner(false);
+    if (scanned) {
+      setCode(scanned);
+      verifySpecialCode(scanned);
+    }
+  };
+  
+  const handleQrError = (err) => {
+    setShowQrScanner(false);
+    setCodeError('QR scan failed. Try again or enter code manually.');
+  };
+  
   // Format timestamp to readable date
   const formatDate = (timestamp) => {
     return timestamp ? new Date(Number(timestamp) * 1000).toLocaleString() : '';
@@ -287,6 +344,41 @@ export default function AttendLecture() {
             {lecture.active && walletConnected && (
               <div style={{ marginTop: '20px' }}>
                 <p>Connected Wallet: {walletAddress}</p>
+                
+                {/* Special code verification UI */}
+                {!codeVerified && (
+                  <div className="card" style={{marginBottom:'20px',background:'#fffbe6',border:'1px solid #ffe58f'}}>
+                    <h3>Enter or Scan Code</h3>
+                    <div style={{display:'flex',gap:'10px',alignItems:'center'}}>
+                      <input
+                        ref={codeInputRef}
+                        type="text"
+                        value={code}
+                        onChange={e => setCode(e.target.value)}
+                        placeholder="Enter code from badge or QR"
+                        disabled={verifyingCode}
+                        style={{fontSize:'1.1em',padding:'6px'}}
+                      />
+                      <button type="button" onClick={() => verifySpecialCode(code)} disabled={verifyingCode || !code}>
+                        {verifyingCode ? 'Verifying...' : 'Verify Code'}
+                      </button>
+                      <button type="button" onClick={handleScanQr} disabled={verifyingCode}>
+                        Scan QR
+                      </button>
+                    </div>
+                    {showQrScanner && (
+                      <div className="qr-modal" style={{position:'fixed',top:0,left:0,width:'100vw',height:'100vh',background:'rgba(0,0,0,0.7)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                        <div style={{background:'#fff',padding:'24px',borderRadius:'10px',boxShadow:'0 2px 16px #0008',maxWidth:'95vw'}}>
+                          <h3>Scan QR Code</h3>
+                          <QrScanner onScan={handleQrScan} onError={handleQrError} active={showQrScanner} />
+                          <button style={{marginTop:'16px'}} onClick={()=>setShowQrScanner(false)}>Cancel</button>
+                        </div>
+                      </div>
+                    )}
+                    {codeError && <p className="error" style={{color:'red',marginTop:'8px'}}>{codeError}</p>}
+                    {codeVerified && <p style={{color:'green',marginTop:'8px'}}>Code verified! You can now claim your POAP.</p>}
+                  </div>
+                )}
                 
                 {/* Always show txHash if present, after a mint */}
                 {txHash && (
@@ -357,6 +449,7 @@ export default function AttendLecture() {
                           onClick={mintPOAP}
                           className="btn-success"
                           style={{ marginTop: '10px' }}
+                          disabled={!codeVerified}
                         >
                           Claim POAP
                         </button>
