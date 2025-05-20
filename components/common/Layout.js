@@ -79,12 +79,13 @@ export default function Layout({ children, title = 'POAP Lecture App' }) {
             border: '1px solid #ffe58f',
             fontWeight: 'bold',
             fontSize: '1rem',
+            alignContent: 'center',
             color: '#ad8b00',
             wordBreak: 'break-all', // ensures long words/addresses wrap
             overflowWrap: 'break-word', // ensures wrapping on mobile
           }}
         >
-          Always check the contract address. Official POAP contract address is:{' '}
+        Always check the smartcontract address. Official <b>IOEC 2025 POAP</b> smartcontract address is: <br />
           <a
             href={
               process.env.NEXT_PUBLIC_BLOCK_EXPLORER_ACCOUNT_URL +
@@ -101,6 +102,7 @@ export default function Layout({ children, title = 'POAP Lecture App' }) {
           >
             {process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}
           </a>
+          <p>(click to see the history of transactions carried out by this contract)</p>
         </div>
         {isMounted && children}
       </main>
