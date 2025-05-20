@@ -13,7 +13,7 @@ export default function Layout({ children, title = 'POAP Lecture App' }) {
   }, []);
   
   return (
-    <div>
+    <div style={{ margin: '0 20%' }}>
       <Head>
         <title>{title}</title>
         <meta name="description" content="Application for lecture POAPs" />
