@@ -332,12 +332,18 @@ export default function AttendLecture() {
             <h2>{lecture.name}</h2>
             <p>Mintable from: {formatDate(lecture.startTimestamp)}</p>
             <p>Mintable until: {formatDate(lecture.timestamp)}</p>
-            <p>Status: {lecture.active ? <p style={{color:'green'}}>Active</p> : <p style={{color:'red'}}>Inactive</p>}</p>
+            <p>Status: {lecture.active ? <p style={{color:'green'}}>Active</p> : <p className='error'>Inactive</p>}</p>
             
             {!lecture.active && (
-              <p className="error">
-                This lecture is not yet or no longer active. POAPs cannot be claimed.
-              </p>
+              lecture.startTimestamp && Number(lecture.startTimestamp) > Math.floor(Date.now() / 1000) ? (
+                <p className="error">
+                  This lecture is not yet active. It will be active on {formatDate(lecture.startTimestamp)}.
+                </p>
+              ) : (
+                <p className="error">
+                  This lecture is no longer active. It was active until {formatDate(lecture.timestamp)}.
+                </p>
+              )
             )}
             
             {lecture.active && !walletConnected && (
