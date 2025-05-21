@@ -1,7 +1,6 @@
 // Secure login API endpoint
 import { serialize } from 'cookie';
 import crypto from 'crypto';
-import bcrypt from 'bcryptjs';
 
 // The admin username from environment or default value
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
@@ -43,8 +42,9 @@ export default async function handler(req, res) {
       });
     }
 
+    const hashPassword = (pwd) => crypto.createHash('sha256').update(pwd).digest('hex');
     const usernameMatch = username === ADMIN_USERNAME;
-    const passwordMatch = bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+    const passwordMatch = hashPassword(password) === ADMIN_PASSWORD_HASH;
 
     if (!(usernameMatch && passwordMatch)) {
       return res.status(401).json({ 

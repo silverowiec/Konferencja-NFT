@@ -1,1 +1,1 @@
-node -e "console.log(require('bcryptjs').hashSync('yourpassword', 10))
+node -e "console.log(require('crypto').createHash('sha256').update('password').digest('hex'))" 
