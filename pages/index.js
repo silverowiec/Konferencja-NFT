@@ -94,7 +94,7 @@ export default function Home() {
   return (
     <Layout title="POAP Lecture App - Home">
       <div>
-        <h1 style={{ marginBottom: '20px' }}>Welcome to POAP Lecture App</h1>
+        <h1 style={{ marginBottom: '20px' }}>Welcome to Session POAP App.</h1>
         
         {/* Tabs for different sections */}
         <div className="tabs">

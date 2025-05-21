@@ -177,7 +177,7 @@ function getOrderedAttributes(attributes) {
               />
             </div>
             <div className="metadata-info">
-              <p><strong>Name:</strong> {metadata.name || 'Unnamed'}</p>
+              <p><strong>Name:</strong> {metadata.time_slot_name}.{metadata.title || 'Unnamed'}</p>
               <p><strong>Description:</strong> {(metadata.description || 'No description').substring(0, 100)}...</p>
               {renderAttributes()}
               {proof[0] && metadata.id === proof[0] && !window.location.pathname.includes('/token') && (

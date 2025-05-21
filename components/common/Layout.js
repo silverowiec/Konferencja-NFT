@@ -24,7 +24,7 @@ export default function Layout({ children, title = 'POAP Lecture App' }) {
         <nav className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 0', fontFamily: 'Inter, Roboto, Open Sans, Arial, sans-serif' }}>
           <div className="logo">
             <Link href="/">
-              <span style={{ fontSize: '1.7rem', fontWeight: 'bold', color: '#00838f', letterSpacing: '-1px' }}>Lecture POAP App</span>
+              <span style={{ fontSize: '1.7rem', fontWeight: 'bold', color: '#00838f', letterSpacing: '-1px' }}>CoNFT System</span>
             </Link>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
@@ -119,7 +119,7 @@ export default function Layout({ children, title = 'POAP Lecture App' }) {
 
       <footer style={{ textAlign: 'center', padding: '24px 0', borderTop: '1.5px solid #e0f7fa', background: '#fff', color: '#00838f', fontFamily: 'Inter, Roboto, Open Sans, Arial, sans-serif', fontWeight: 500, fontSize: '1.05rem' }}>
         <div className="container">
-          <p>&copy; {new Date().getFullYear()} Lecture POAP App</p>
+          <p>&copy; {new Date().getFullYear()} CoNFT System</p>
         </div>
       </footer>
       <style jsx>{`

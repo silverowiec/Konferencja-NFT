@@ -19,7 +19,7 @@ export default function AdminDashboard() {
   // If not logged in, show login form
   if (!isLoggedIn) {
     return (
-      <Layout title="Admin Login - POAP Lecture App">
+      <Layout title="Admin Login - CoNFT System">
         <div>
           <h1 style={{ marginBottom: '20px' }}>Admin Authentication Required</h1>
           <LoginForm />
@@ -30,7 +30,7 @@ export default function AdminDashboard() {
   
   // If logged in, show admin dashboard
   return (
-    <Layout title="Admin Dashboard - POAP Lecture App">
+    <Layout title="Admin Dashboard - CoNFT System">
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h1 style={{ color: '#00838f', fontWeight: 700, fontSize: '2rem', letterSpacing: '-1px', fontFamily: 'Inter, Roboto, Open Sans, Arial, sans-serif' }}>Admin Dashboard</h1>
