@@ -35,6 +35,9 @@ export default function AttendLecture() {
   // State for QR scanner modal
   const [showQrScanner, setShowQrScanner] = useState(false);
   
+  // State for showing manual NFT import instructions
+  const [showImportInstructions, setShowImportInstructions] = useState(false);
+  
   // Fetch lecture details when the component mounts and lectureId is available
   useEffect(() => {
     if (!lectureId) return;
@@ -276,14 +279,8 @@ export default function AttendLecture() {
         },
       });
       
-      alert('Token successfully added to MetaMask!');
       
     } catch (error) {
-      console.error('Error importing token to MetaMask:', error);
-      console.error('Token ID:', alreadyClaimed);
-      console.error('Contract Address:', contractAddress);
-      console.error('Wallet Address:', walletAddress);
-      alert(`Failed to import token to MetaMask: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -493,7 +490,10 @@ export default function AttendLecture() {
                         {contractAddress && (
                           <div style={{ marginTop: '15px' }}>
                             <button 
-                              onClick={importTokenToMetaMask}
+                              onClick={() => {
+                                importTokenToMetaMask();
+                                setShowImportInstructions(true);
+                              }}
                               type="button"
                               className="btn-secondary"
                               style={{ backgroundColor: '#e0f7fa', color: '#00695c', padding: '10px 20px', borderRadius: '8px', border: 'none', fontSize: '16px', cursor: 'pointer', transition: 'background-color 0.3s' }}
@@ -503,6 +503,29 @@ export default function AttendLecture() {
                             <p style={{ fontSize: '0.8rem', marginTop: '5px', color: '#666' }}>
                               Click to add this POAP to your MetaMask wallet for easy viewing
                             </p>
+                            {showImportInstructions && (
+                              <div style={{
+                                background: '#fffbe6',
+                                border: '1px solid #ffe58f',
+                                borderRadius: '8px',
+                                padding: '14px 18px',
+                                marginTop: '14px',
+                                color: '#7c6f00',
+                                fontSize: '0.98rem',
+                                lineHeight: 1.6,
+                                maxWidth: 420
+                              }}>
+                                <b>Manual NFT Import Instructions:</b>
+                                <ol style={{ margin: '10px 0 0 18px', padding: 0 }}>
+                                  <li>On your MetaMask, switch to <b>Polygon</b> network</li>
+                                  <li>Click on <b>NFTs</b> tab</li>
+                                  <li>Click <b>IMPORT NFTs</b></li>
+                                  <li>Paste the contract address: <b>{contractAddress}</b></li>
+                                  <li>Provide token id: <b>{alreadyClaimed?.toString?.() || ''}</b></li>
+                                  <li>Click <b>Import</b></li>
+                                </ol>
+                              </div>
+                            )}
                           </div>
                         )}
                         
@@ -595,6 +618,29 @@ export default function AttendLecture() {
                                 <p style={{ fontSize: '0.8rem', marginTop: '5px', color: '#666' }}>
                                   Click to add this POAP to your MetaMask wallet for easy viewing
                                 </p>
+                                {showImportInstructions && (
+                                  <div style={{
+                                    background: '#fffbe6',
+                                    border: '1px solid #ffe58f',
+                                    borderRadius: '8px',
+                                    padding: '14px 18px',
+                                    marginTop: '14px',
+                                    color: '#7c6f00',
+                                    fontSize: '0.98rem',
+                                    lineHeight: 1.6,
+                                    maxWidth: 420
+                                  }}>
+                                    <b>Manual NFT Import Instructions:</b>
+                                    <ol style={{ margin: '10px 0 0 18px', padding: 0 }}>
+                                      <li>On your MetaMask, switch to <b>Polygon</b> network</li>
+                                      <li>Click on <b>NFTs</b> tab</li>
+                                      <li>Click <b>IMPORT NFTs</b></li>
+                                      <li>Paste the contract address: <span style={{fontFamily:'monospace',fontSize:'0.97em'}}>{contractAddress}</span></li>
+                                      <li>Provide token id: <span style={{fontFamily:'monospace',fontSize:'0.97em'}}>{alreadyClaimed?.toString?.() || ''}</span></li>
+                                      <li>Click <b>Import</b></li>
+                                    </ol>
+                                  </div>
+                                )}
                               </div>
                             )}
                             
