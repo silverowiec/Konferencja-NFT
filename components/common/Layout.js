@@ -24,7 +24,23 @@ export default function Layout({ children, title = 'POAP Lecture App' }) {
         <nav className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 0', fontFamily: 'Inter, Roboto, Open Sans, Arial, sans-serif' }}>
           <div className="logo">
             <Link href="/">
-              <span style={{ fontSize: '1.7rem', fontWeight: 'bold', color: '#00838f', letterSpacing: '-1px' }}>CoNFT System</span>
+              <span style={{ fontSize: '1.7rem', fontWeight: 'bold', color: '#00838f', letterSpacing: '-1px' }}>CoNFT System</span>           <span
+            style={{
+              display: 'inline-block',
+              marginLeft: '8px',
+              padding: '2px 8px',
+              background: '#00838f',
+              color: '#fff',
+              borderRadius: '6px',
+              fontSize: '0.82rem',
+              fontWeight: 600,
+              verticalAlign: 'middle',
+              letterSpacing: '0.5px',
+              lineHeight: 1.2,
+            }}
+          >
+            {process.env.NEXT_PUBLIC_NETWORK_NAME === 'sepolia' ? 'testnet' : 'mainnet'}
+          </span>
             </Link>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
@@ -89,7 +105,7 @@ export default function Layout({ children, title = 'POAP Lecture App' }) {
             padding: '18px 20px',
           }}
         >
-          Always check the smartcontract address. Official <b>IOEC 2025 POAP</b> smartcontract address is:{' '}
+          Always check the smartcontract address. The official <b>IOEC 2025 POAP</b> smartcontract address is:{' '}
           <a
             href={
               process.env.NEXT_PUBLIC_BLOCK_EXPLORER_ACCOUNT_URL +
@@ -110,9 +126,8 @@ export default function Layout({ children, title = 'POAP Lecture App' }) {
             rel="noopener noreferrer"
           >
             {process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}
-          </a><br />(click to see the history of transactions carried out by this contract)
-
-
+          </a>
+          <br />(click to see the history of transactions carried out by this contract)
         </div>
         {isMounted && children}
       </main>
