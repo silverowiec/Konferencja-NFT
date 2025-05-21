@@ -377,20 +377,9 @@ export default function AttendLecture() {
               )}
             </p>
             
-            {lecture.active && !walletConnected && (
+            {lecture.active && (
               <div style={{ marginTop: '20px' }}>
-                <p>Connect your Ethereum wallet to claim your POAP for attending this lecture.</p>
-                <button type="button" onClick={connectWallet} style={{ marginTop: '10px', backgroundColor: '#00838f', color: '#fff', padding: '10px 20px', borderRadius: '8px', border: 'none', fontSize: '16px', cursor: 'pointer', transition: 'background-color 0.3s' }}>
-                  Connect Wallet
-                </button>
-              </div>
-            )}
-            
-            {lecture.active && walletConnected && (
-              <div style={{ marginTop: '20px' }}>
-                <p>Connected Wallet: {walletAddress}</p>
-                
-                {/* Special code verification UI */}
+                {/* Special code verification UI always shown first */}
                 {!codeVerified && (
                   <div className="card" style={{marginBottom:'20px',background:'#fffbe6',border:'1px solid #ffe58f'}}>
                     <h3>Enter or Scan Code</h3>
@@ -400,6 +389,12 @@ export default function AttendLecture() {
                         type="text"
                         value={code}
                         onChange={e => setCode(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && !verifyingCode && code) {
+                            e.preventDefault();
+                            verifySpecialCode(code);
+                          }
+                        }}
                         placeholder="Enter code from badge or QR"
                         disabled={verifyingCode}
                         style={{fontSize:'1.1em',padding:'6px'}}
@@ -421,136 +416,55 @@ export default function AttendLecture() {
                       </div>
                     )}
                     {codeError && <p className="error" style={{color:'red',marginTop:'8px'}}>{codeError}</p>}
-                    {codeVerified && <p style={{color:'green',marginTop:'8px'}}>Code verified! You can now claim your POAP.</p>}
+                    {codeVerified && <p style={{color:'green',marginTop:'8px'}}>Code verified! Please connect your wallet to claim your POAP.</p>}
                   </div>
                 )}
-                
-                {/* Always show txHash if present, after a mint */}
-                {txHash && (
-                  <div style={{ marginTop: '10px' }}>
-                    <a
-                      href={
-                        process.env.NEXT_PUBLIC_BLOCK_EXPLORER_TX_URL
-                          ? `${process.env.NEXT_PUBLIC_BLOCK_EXPLORER_TX_URL}${txHash}`
-                          : `https://etherscan.io/tx/${txHash}`
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="view-transaction-link"
-                    >
-                      🔍 View Transaction on Explorer
-                    </a>
-                    <p style={{ fontSize: '0.8rem', marginTop: '5px', color: '#666', wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
-                      Transaction Hash: <code style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>{txHash}</code>
-                    </p>
+                {/* Show wallet connect only after code is verified */}
+                {codeVerified && !walletConnected && (
+                  <div style={{ marginTop: '20px' }}>
+                    <p>Connect your Ethereum wallet to claim your POAP for attending this lecture.</p>
+                    <button type="button" onClick={connectWallet} style={{ marginTop: '10px', backgroundColor: '#00838f', color: '#fff', padding: '10px 20px', borderRadius: '8px', border: 'none', fontSize: '16px', cursor: 'pointer', transition: 'background-color 0.3s' }}>
+                      Connect Wallet
+                    </button>
                   </div>
                 )}
-                
-                {alreadyClaimed ? (
-                  // User has already claimed - show claimed message and import button
-                  <>
-                    <p className="success" style={{ marginTop: '10px' }}>
-                      {mintStatus === 'success' 
-                        ? mintMessage 
-                        : 'You have already claimed this POAP!'}
-                    </p>
-                    {contractAddress && (
-                      <div style={{ marginTop: '15px' }}>
-                        <button 
-                          onClick={importTokenToMetaMask}
-                          type="button"
-                          className="btn-secondary"
-                          style={{ backgroundColor: '#e0f7fa', color: '#00695c', padding: '10px 20px', borderRadius: '8px', border: 'none', fontSize: '16px', cursor: 'pointer', transition: 'background-color 0.3s' }}
+                {/* Show claim POAP only after both code and wallet are verified/connected */}
+                {codeVerified && walletConnected && (
+                  <div style={{ marginTop: '20px' }}>
+                    <p>Connected Wallet: {walletAddress}</p>
+                    {/* Always show txHash if present, after a mint */}
+                    {txHash && (
+                      <div style={{ marginTop: '10px' }}>
+                        <a
+                          href={
+                            process.env.NEXT_PUBLIC_BLOCK_EXPLORER_TX_URL
+                              ? `${process.env.NEXT_PUBLIC_BLOCK_EXPLORER_TX_URL}${txHash}`
+                              : `https://etherscan.io/tx/${txHash}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="view-transaction-link"
                         >
-                          Import Token to MetaMask
-                        </button>
-                        <p style={{ fontSize: '0.8rem', marginTop: '5px', color: '#666' }}>
-                          Click to add this POAP to your MetaMask wallet for easy viewing
+                          🔍 View Transaction on Explorer
+                        </a>
+                        <p style={{ fontSize: '0.8rem', marginTop: '5px', color: '#666', wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
+                          Transaction Hash: <code style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>{txHash}</code>
                         </p>
                       </div>
                     )}
-                    
-                    {/* Show token metadata if available */}
-                    {loadingMetadata && (
-                      <div className="metadata-loading" style={{ marginTop: '20px' }}>
-                        <p>Loading token metadata...</p>
-                      </div>
-                    )}
-                    
-                    {tokenMetadata && (
-                      <div className="token-details-container">
-                        <h3>Your Token Details</h3>
-                        <TokenDetails metadata={tokenMetadata} />
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  // User hasn't claimed yet - show claim button or minting status
-                  <>
-                    {mintStatus === 'idle' && (
-                      <div style={{ marginTop: '10px' }}>
-                        <p>You can now claim your POAP for attending this lecture.</p>
-                        <button 
-                          type="button"
-                          onClick={mintPOAP}
-                          className="btn-success"
-                          style={{ marginTop: '10px', backgroundColor: '#00838f', color: '#fff', padding: '10px 20px', borderRadius: '8px', border: 'none', fontSize: '16px', cursor: 'pointer', transition: 'background-color 0.3s' }}
-                          disabled={!codeVerified}
-                        >
-                          Claim POAP
-                        </button>
-                      </div>
-                    )}
-                    
-                    {mintStatus === 'loading' && (
-                      <div style={{ marginTop: '10px' }}>
-                        <p>{mintMessage}</p>
-                        <button 
-                          type="button"
-                          disabled
-                          className="btn-success"
-                          style={{ marginTop: '10px', backgroundColor: '#00838f', color: '#fff', padding: '10px 20px', borderRadius: '8px', border: 'none', fontSize: '16px', cursor: 'pointer', transition: 'background-color 0.3s' }}
-                        >
-                          Minting...
-                        </button>
-                      </div>
-                    )}
-                    
-                    {mintStatus === 'error' && (
-                      <p className="error" style={{ marginTop: '10px' }}>
-                        {mintMessage}
-                      </p>
-                    )}
-                    
-                    {mintStatus === 'success' && (
+                    {alreadyClaimed ? (
+                      // User has already claimed - show claimed message and import button
                       <>
                         <p className="success" style={{ marginTop: '10px' }}>
-                          {mintMessage}
+                          {mintStatus === 'success' 
+                            ? mintMessage 
+                            : 'You have already claimed this POAP!'}
                         </p>
-                        {txHash && (
-                          <div style={{ marginTop: '10px' }}>
-                            <a
-                              href={
-                                process.env.NEXT_PUBLIC_BLOCK_EXPLORER_TX_URL
-                                  ? `${process.env.NEXT_PUBLIC_BLOCK_EXPLORER_TX_URL}${txHash}`
-                                  : `https://etherscan.io/tx/${txHash}`
-                              }
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="view-transaction-link"
-                            >
-                              View Transaction on Explorer
-                            </a>
-                            <p style={{ fontSize: '0.8rem', marginTop: '5px', color: '#666', wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
-                              Transaction Hash: <code style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>{txHash}</code>
-                            </p>
-                          </div>
-                        )}
                         {contractAddress && (
                           <div style={{ marginTop: '15px' }}>
                             <button 
+                              onClick={importTokenToMetaMask}
                               type="button"
-                              onClick={importTokenToMetaMask} 
                               className="btn-secondary"
                               style={{ backgroundColor: '#e0f7fa', color: '#00695c', padding: '10px 20px', borderRadius: '8px', border: 'none', fontSize: '16px', cursor: 'pointer', transition: 'background-color 0.3s' }}
                             >
@@ -562,22 +476,116 @@ export default function AttendLecture() {
                           </div>
                         )}
                         
-                        {/* Show token metadata for newly minted token if available */}
+                        {/* Show token metadata if available */}
                         {loadingMetadata && (
                           <div className="metadata-loading" style={{ marginTop: '20px' }}>
-                            <p>Loading token details...</p>
+                            <p>Loading token metadata...</p>
                           </div>
                         )}
                         
                         {tokenMetadata && (
-                          <div className="token-details-container" style={{ marginTop: '30px' }}>
+                          <div className="token-details-container">
                             <h3>Your Token Details</h3>
                             <TokenDetails metadata={tokenMetadata} />
                           </div>
                         )}
                       </>
+                    ) : (
+                      // User hasn't claimed yet - show claim button or minting status
+                      <>
+                        {mintStatus === 'idle' && (
+                          <div style={{ marginTop: '10px' }}>
+                            <p>You can now claim your POAP for attending this lecture.</p>
+                            <button 
+                              type="button"
+                              onClick={mintPOAP}
+                              className="btn-success"
+                              style={{ marginTop: '10px', backgroundColor: '#00838f', color: '#fff', padding: '10px 20px', borderRadius: '8px', border: 'none', fontSize: '16px', cursor: 'pointer', transition: 'background-color 0.3s' }}
+                              disabled={!codeVerified}
+                            >
+                              Claim POAP
+                            </button>
+                          </div>
+                        )}
+                        
+                        {mintStatus === 'loading' && (
+                          <div style={{ marginTop: '10px' }}>
+                            <p>{mintMessage}</p>
+                            <button 
+                              type="button"
+                              disabled
+                              className="btn-success"
+                              style={{ marginTop: '10px', backgroundColor: '#00838f', color: '#fff', padding: '10px 20px', borderRadius: '8px', border: 'none', fontSize: '16px', cursor: 'pointer', transition: 'background-color 0.3s' }}
+                            >
+                              Minting...
+                            </button>
+                          </div>
+                        )}
+                        
+                        {mintStatus === 'error' && (
+                          <p className="error" style={{ marginTop: '10px' }}>
+                            {mintMessage}
+                          </p>
+                        )}
+                        
+                        {mintStatus === 'success' && (
+                          <>
+                            <p className="success" style={{ marginTop: '10px' }}>
+                              {mintMessage}
+                            </p>
+                            {txHash && (
+                              <div style={{ marginTop: '10px' }}>
+                                <a
+                                  href={
+                                    process.env.NEXT_PUBLIC_BLOCK_EXPLORER_TX_URL
+                                      ? `${process.env.NEXT_PUBLIC_BLOCK_EXPLORER_TX_URL}${txHash}`
+                                      : `https://etherscan.io/tx/${txHash}`
+                                  }
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="view-transaction-link"
+                                >
+                                  View Transaction on Explorer
+                                </a>
+                                <p style={{ fontSize: '0.8rem', marginTop: '5px', color: '#666', wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
+                                  Transaction Hash: <code style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>{txHash}</code>
+                                </p>
+                              </div>
+                            )}
+                            {contractAddress && (
+                              <div style={{ marginTop: '15px' }}>
+                                <button 
+                                  type="button"
+                                  onClick={importTokenToMetaMask} 
+                                  className="btn-secondary"
+                                  style={{ backgroundColor: '#e0f7fa', color: '#00695c', padding: '10px 20px', borderRadius: '8px', border: 'none', fontSize: '16px', cursor: 'pointer', transition: 'background-color 0.3s' }}
+                                >
+                                  Import Token to MetaMask
+                                </button>
+                                <p style={{ fontSize: '0.8rem', marginTop: '5px', color: '#666' }}>
+                                  Click to add this POAP to your MetaMask wallet for easy viewing
+                                </p>
+                              </div>
+                            )}
+                            
+                            {/* Show token metadata for newly minted token if available */}
+                            {loadingMetadata && (
+                              <div className="metadata-loading" style={{ marginTop: '20px' }}>
+                                <p>Loading token details...</p>
+                              </div>
+                            )}
+                            
+                            {tokenMetadata && (
+                              <div className="token-details-container" style={{ marginTop: '30px' }}>
+                                <h3>Your Token Details</h3>
+                                <TokenDetails metadata={tokenMetadata} />
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
             )}
