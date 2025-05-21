@@ -19,6 +19,8 @@ async function fetchIpfsMetadataFolder(folderHash, count = 20) {
     } catch (e) {
       // skip missing or invalid files
     }
+    // Add a delay to avoid rate limiting
+    await new Promise(resolve => setTimeout(resolve, 300));
   }
   return files;
 }
