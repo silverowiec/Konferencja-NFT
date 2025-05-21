@@ -176,7 +176,8 @@ const TokenDetails = ({ metadata }) => {
                         ))}
                       </tbody>
                     </table>
-                    {proof[0] && metadata.id === proof[0] && !window.location.pathname.includes('/token') && (
+                  </div>
+                  {proof[0] && metadata.id === proof[0] && !window.location.pathname.includes('/token') && (
                       <div>
                         <h2><b>Proof:</b></h2>
                         <div className="proof-container">
@@ -197,7 +198,6 @@ const TokenDetails = ({ metadata }) => {
                         Generate Proof
                       </button>
                     )}
-                  </div>
                 </>
               )}
                 
