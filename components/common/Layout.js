@@ -45,7 +45,7 @@ export default function Layout({ children, title = 'POAP Lecture App' }) {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
             {/* QR Scanner link for all users */}
-            <Link href="/scan"                 style={{ background: '#00838f', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 22px', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,131,143,0.08)' }}
+            <Link href="/scan"                 style={{ background: '#00838f', color: '#fff', border: 'none', borderRadius: '8px', padding: '5px 11px', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,131,143,0.08)' }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ marginRight: '5px' }} stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <rect x="3" y="3" width="7" height="7" rx="1" />

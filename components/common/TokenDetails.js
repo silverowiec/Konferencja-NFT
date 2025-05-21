@@ -164,11 +164,13 @@ function getOrderedAttributes(attributes) {
     );
   };
   
+  // Explorer base URL (can be set via env or fallback to etherscan)
+  const explorerBaseUrl = process.env.NEXT_PUBLIC_ETHERSCAN_URL || 'https://etherscan.io/';
+
   return (
     metadata && (
         <>
         <div className="metadata-preview">
-          <h4>Token Metadata</h4>
           <div className="metadata-content">
             <div className="metadata-image">
               <ImageWithFallback
@@ -177,8 +179,17 @@ function getOrderedAttributes(attributes) {
               />
             </div>
             <div className="metadata-info">
-              <p><strong>Name:</strong> {metadata.time_slot_name}.{metadata.title || 'Unnamed'}</p>
+              <p><strong>ID:</strong> {metadata.id || 'Error'}</p>
+              <p><strong>Name:</strong> {metadata.name || 'Unnamed'}</p>
               <p><strong>Description:</strong> {(metadata.description || 'No description').substring(0, 100)}...</p>
+              {/* Show explorer link if txHash is present in metadata */}
+              {metadata.id && (
+                <p style={{ margin: '8px 0' }}>
+                  <a href={`${explorerBaseUrl}token/${process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}?a=${metadata.id}`} target="_blank" rel="noopener noreferrer" style={{ color: '#00838f', textDecoration: 'underline', fontWeight: 600 }}>
+                    View transaction in block explorer ↗
+                  </a>
+                </p>
+              )}
               {renderAttributes()}
               {proof[0] && metadata.id === proof[0] && !window.location.pathname.includes('/token') && (
                   <div>

@@ -50,7 +50,7 @@ export default function LectureForm({ onLectureCreated }) {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to create lecture');
+        throw new Error(data.message || 'Failed to create session');
       }
       
       // Generate QR code using the lecture hash
@@ -59,7 +59,7 @@ export default function LectureForm({ onLectureCreated }) {
         setQrCodeData(qrCode);
       }
       
-      setSuccess(`Lecture created successfully! Lecture ID: ${data.lectureId}`);
+      setSuccess(`Session created successfully! Session ID: ${data.lectureId}`);
       
       // Reset form
       setName('');

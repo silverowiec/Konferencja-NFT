@@ -409,7 +409,7 @@ export default function AttendLecture() {
                 {/* Special code verification UI always shown first */}
                 {!codeVerified && (
                   <div className="card" style={{marginBottom:'20px',background:'#fffbe6',border:'1px solid #ffe58f'}}>
-                    <h3>Enter or Scan Code</h3>
+                    <h3>Enter or Scan TOKC Code</h3>
                     <div style={{display:'flex',gap:'10px',alignItems:'center'}}>
                       <input
                         ref={codeInputRef}

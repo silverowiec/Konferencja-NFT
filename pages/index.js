@@ -126,7 +126,7 @@ export default function Home() {
           {/* Home tab content */}
           {activeTab === 'home' && !isLoggedIn && (
             <div className="card">
-              <h2>Lecture Attendance Verification</h2>
+              <h2>Session Attendance Verification</h2>
               
               <div className="scan-qr-button">
                 <Link href="/scan">
@@ -138,7 +138,7 @@ export default function Home() {
                       <rect x="3" y="14" width="7" height="7" rx="1" />
                       <rect x="14" y="14" width="7" height="7" rx="1" />
                     </svg>
-                    Scan QR Code
+                    Get POAP
                   </button>
                 </Link>
               </div>

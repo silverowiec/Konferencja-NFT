@@ -235,7 +235,7 @@ export default function LectureList({ refresh }) {
       {lectures.map((lecture) => (
         <div key={lecture.id} className="card" style={{ background: '#fff', borderRadius: '14px', boxShadow: '0 2px 12px rgba(0,131,143,0.07)', border: '1px solid #e0f7fa', marginBottom: '32px', padding: '28px 24px' }}>
           {metadata[lecture.id]?.attributes && metadata[lecture.id].attributes.length > 0 && (<h3 style={{ color: '#00838f', fontWeight: 700, fontSize: '1.3rem', marginBottom: '10px', fontFamily: 'Inter, Roboto, Open Sans, Arial, sans-serif' }}>{getOrderedAttributes(metadata[lecture.id].attributes)[0].value}.{getOrderedAttributes(metadata[lecture.id].attributes)[1].value}</h3>)}
-          <p style={{ color: '#555', fontSize: '1rem', marginBottom: 4 }}>Lecture ID: <span style={{ fontFamily: 'monospace', color: '#00838f' }}>{lecture.id}</span></p>
+          <p style={{ color: '#555', fontSize: '1rem', marginBottom: 4 }}>Session ID: <span style={{ fontFamily: 'monospace', color: '#00838f' }}>{lecture.id}</span></p>
           {lecture.hash && (
             <p style={{ marginBottom: 4 }}>
               <small style={{ fontFamily: 'monospace', wordBreak: 'break-all', color: '#00838f' }}>Hash: {lecture.hash}</small>
