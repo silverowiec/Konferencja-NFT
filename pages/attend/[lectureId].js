@@ -346,9 +346,36 @@ export default function AttendLecture() {
     return timestamp ? new Date(Number(timestamp) * 1000).toLocaleString() : '';
   };
 
+  // Step progress bar logic
+  const getCurrentStep = () => {
+    if (!codeVerified) return 2; // Step 2: Scan POAP claim QR Code
+    if (!walletConnected) return 3; // Step 3: Connect Wallet
+    if (!alreadyClaimed && mintStatus !== 'success') return 4; // Step 4: Claim your token
+    return 4; // Step 4: Claimed
+  };
+  // If you want to add session QR as step 1, you can adjust logic here
+  const steps = [
+    'Scan Session QR Code',
+    'Scan POAP claim QR Code',
+    'Connect Wallet',
+    'Claim your token',
+  ];
+  const currentStep = getCurrentStep();
+
   return (
     <Layout title={"Attend Lecture - POAP Lecture App"}>
       <div>
+        {/* Step Progress Bar */}
+        <div className="step-progress-bar">
+          {steps.map((label, idx) => (
+            <div key={label} className="step-item">
+              <div className={`step-circle${idx + 1 <= currentStep ? ' active' : ''}${idx + 1 === currentStep ? ' current' : ''}`}>{idx + 1}</div>
+              <div className={`step-label${idx + 1 === currentStep ? ' current' : ''}`}>{label}</div>
+              {/* No progress bar/line between dots */}
+            </div>
+          ))}
+        </div>
+        
         <h1 style={{ color: '#00838f', fontWeight: 700, fontSize: '2.1rem', letterSpacing: '-1px', marginBottom: '24px', fontFamily: 'Inter, Roboto, Open Sans, Arial, sans-serif' }}>Attend Lecture & Claim POAP</h1>
         
         {loading && <p>Loading lecture details...</p>}
@@ -593,6 +620,83 @@ export default function AttendLecture() {
         )}
         
         <style jsx>{`
+          .step-progress-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 32px;
+            gap: 0;
+            width: 100%;
+            overflow-x: auto;
+            justify-content: center;
+          }
+          .step-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1 1 0;
+            min-width: 80px;
+            justify-content: center;
+          }
+          .step-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #e0f7fa;
+            color: #00838f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            border: 2px solid #e0f7fa;
+            transition: background 0.2s, color 0.2s, border 0.2s;
+            z-index: 1;
+            flex-shrink: 0;
+            margin-bottom: 8px;
+          }
+          .step-circle.active {
+            background: #00838f;
+            color: #fff;
+            border: 2px solid #00838f;
+          }
+          .step-circle.current {
+            border: 3px solid #00838f;
+          }
+          .step-label {
+            color: #aaa;
+            font-weight: 400;
+            font-size: 15px;
+            transition: color 0.2s, font-weight 0.2s;
+            text-align: center;
+            white-space: normal;
+            max-width: 100px;
+          }
+          .step-label.current {
+            color: #00838f;
+            font-weight: 700;
+          }
+          @media (max-width: 600px) {
+            .step-progress-bar {
+              flex-direction: row;
+              align-items: flex-start;
+              gap: 0;
+              margin-bottom: 24px;
+              justify-content: center;
+            }
+            .step-item {
+              min-width: 60px;
+            }
+            .step-circle {
+              width: 28px;
+              height: 28px;
+              font-size: 14px;
+              margin-bottom: 6px;
+            }
+            .step-label {
+              font-size: 13px;
+              max-width: 70px;
+            }
+          }
           .token-details-container {
             border-top: 1px solid #eee;
             padding-top: 20px;
