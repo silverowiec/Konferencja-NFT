@@ -297,9 +297,12 @@ export default function AttendLecture() {
       const data = await res.json();
       const text = data.result || '';
       console.log('Code verification response:', text);
-      if (text.startsWith('A')) {
+      if (text.startsWith('A1')) {
         setCodeVerified(true);
         setCodeError('');
+      } else if (text.startsWith('A0')) {
+        setCodeVerified(false);
+        setCodeError('Attendee not registered on site by the Event Organizer');
       } else if (text.startsWith('B')) {
         setCodeVerified(false);
         setCodeError('Wrong code. Please try again.');
