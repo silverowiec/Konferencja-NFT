@@ -4,6 +4,7 @@ import Layout from '../../components/common/Layout';
 import TokenDetails from '../../components/common/TokenDetails';
 import QrScanner from '../../components/common/QrScanner';
 import { hasClaimed, getLectureByHash, fetchMetadata } from '../../lib/blockchain';
+import { rpc } from 'viem/utils';
 
 export default function AttendLecture() {
   const router = useRouter();
@@ -95,6 +96,7 @@ export default function AttendLecture() {
       const address = accounts[0];
       setWalletAddress(address);
       setWalletConnected(true);
+      await switchNetwork();
       
       // Check if user has already claimed this POAP using secure API
       if (lectureId) {
@@ -127,6 +129,37 @@ export default function AttendLecture() {
     }
   };
   
+  // Helper to switch to Sepolia network in MetaMask
+  async function switchNetwork() {
+    if (!window.ethereum) return;
+    try {
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: process.env.NEXT_PUBLIC_CHAIN_ID }], // Sepolia chainId
+      });
+    } catch (switchError) {
+      // This error code indicates the chain has not been added to MetaMask
+      if (switchError.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: process.env.NEXT_PUBLIC_CHAIN_ID,
+              chainName: process.env.NEXT_PUBLIC_CHAIN_NAME,
+              rpcUrls: [process.env.NEXT_PUBLIC_METAMASK_RPC_URL],
+              blockExplorerUrls: [process.env.NEXT_PUBLIC_ETHERSCAN_URL],
+            }],
+          });
+        } catch (addError) {
+          // handle "add" error
+          console.error('Failed to add Sepolia network:', addError);
+        }
+      } else {
+        console.error('Failed to switch to Sepolia:', switchError);
+      }
+    }
+  }
+  
   // Function to fetch token metadata
   const fetchTokenMetadata = async (tokenURI) => {
     if (!tokenURI) return;
@@ -145,7 +178,7 @@ export default function AttendLecture() {
       metadata.id = alreadyClaimed;
       
       // Add lecture name to metadata if available
-      if (lecture && lecture.name) {
+      if (lecture?.name) {
         metadata.lectureName = lecture.name;
       }
 
@@ -383,7 +416,7 @@ export default function AttendLecture() {
                         <div style={{background:'#fff',padding:'24px',borderRadius:'10px',boxShadow:'0 2px 16px #0008',maxWidth:'95vw'}}>
                           <h3>Scan QR Code</h3>
                           <QrScanner onScan={handleQrScan} onError={handleQrError} active={showQrScanner} />
-                          <button style={{marginTop:'16px'}} onClick={()=>setShowQrScanner(false)}>Cancel</button>
+                          <button type="button" style={{marginTop:'16px'}} onClick={()=>setShowQrScanner(false)}>Cancel</button>
                         </div>
                       </div>
                     )}
@@ -407,8 +440,8 @@ export default function AttendLecture() {
                     >
                       🔍 View Transaction on Explorer
                     </a>
-                    <p style={{ fontSize: '0.8rem', marginTop: '5px', color: '#666' }}>
-                      Transaction Hash: <code>{txHash}</code>
+                    <p style={{ fontSize: '0.8rem', marginTop: '5px', color: '#666', wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
+                      Transaction Hash: <code style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>{txHash}</code>
                     </p>
                   </div>
                 )}
@@ -508,8 +541,8 @@ export default function AttendLecture() {
                             >
                               View Transaction on Explorer
                             </a>
-                            <p style={{ fontSize: '0.8rem', marginTop: '5px', color: '#666' }}>
-                              Transaction Hash: <code>{txHash}</code>
+                            <p style={{ fontSize: '0.8rem', marginTop: '5px', color: '#666', wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
+                              Transaction Hash: <code style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>{txHash}</code>
                             </p>
                           </div>
                         )}

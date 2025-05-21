@@ -96,6 +96,7 @@ const MetaMaskWallet = () => {
       });
       
       setWalletAddress(accounts[0]);
+      await switchNetwork();
     } catch (error) {
       console.error('Error connecting wallet:', error);
       setConnectionError(error.message || 'Failed to connect to wallet');
@@ -417,5 +418,35 @@ const MetaMaskWallet = () => {
     </div>
   );
 };
-
+  // Helper to switch to Sepolia network in MetaMask
+  async function switchNetwork() {
+    if (!window.ethereum) return;
+    try {
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: process.env.NEXT_PUBLIC_CHAIN_ID }], // Sepolia chainId
+      });
+    } catch (switchError) {
+      // This error code indicates the chain has not been added to MetaMask
+      if (switchError.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: process.env.NEXT_PUBLIC_CHAIN_ID,
+              chainName: process.env.NEXT_PUBLIC_CHAIN_NAME,
+              rpcUrls: [process.env.NEXT_PUBLIC_METAMASK_RPC_URL],
+              blockExplorerUrls: [process.env.NEXT_PUBLIC_ETHERSCAN_URL],
+            }],
+          });
+        } catch (addError) {
+          // handle "add" error
+          console.error('Failed to add Sepolia network:', addError);
+        }
+      } else {
+        console.error('Failed to switch to Sepolia:', switchError);
+      }
+    }
+  }
+  
 export default MetaMaskWallet;
