@@ -46,7 +46,7 @@ export default function LectureList({ refresh }) {
         setLoading(true);
         const fetchedLectures = await getAllLectures();
         // Sort by startTimestamp (newest first)
-        fetchedLectures.sort((a, b) => Number(b.startTimestamp) - Number(a.startTimestamp));
+        fetchedLectures.sort((a, b) => Number(b.id) - Number(a.id));
         setLectures(fetchedLectures);
         setLoading(false);
         console.log('Fetched lectures:', fetchedLectures);
@@ -232,7 +232,7 @@ export default function LectureList({ refresh }) {
         <p>No lectures found. Create your first lecture!</p>
       )}
 
-      {lectures.map((lecture) => (
+      {lectures.sort((a, b) => Number(a.id) > Number(b.id)).map((lecture) => (
         <div key={lecture.id} className="card" style={{ background: '#fff', borderRadius: '14px', boxShadow: '0 2px 12px rgba(0,131,143,0.07)', border: '1px solid #e0f7fa', marginBottom: '32px', padding: '28px 24px' }}>
           {metadata[lecture.id]?.attributes && metadata[lecture.id].attributes.length > 0 && (<h3 style={{ color: '#00838f', fontWeight: 700, fontSize: '1.3rem', marginBottom: '10px', fontFamily: 'Inter, Roboto, Open Sans, Arial, sans-serif' }}>{getOrderedAttributes(metadata[lecture.id].attributes)[0].value}.{getOrderedAttributes(metadata[lecture.id].attributes)[1].value}</h3>)}
           <p style={{ color: '#555', fontSize: '1rem', marginBottom: 4 }}>Session ID: <span style={{ fontFamily: 'monospace', color: '#00838f' }}>{lecture.id}</span></p>

@@ -38,9 +38,6 @@ export default function AdminDashboard() {
             <button onClick={refreshLectures} style={{ marginRight: '10px', background: '#fff', color: '#00838f', border: '1.5px solid #00838f', borderRadius: '8px', fontWeight: 600, fontSize: '1rem', padding: '8px 18px', cursor: 'pointer', transition: 'background 0.2s' }}>
               Refresh Lectures
             </button>
-            <Link href="/admin/create">
-              <button className="btn-success" style={{ background: '#00838f', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, fontSize: '1rem', padding: '8px 18px', cursor: 'pointer', transition: 'background 0.2s' }}>Create New Lecture</button>
-            </Link>
           </div>
         </div>
         <div className="card" style={{ background: '#e0f7fa', border: '1.5px solid #00838f', borderRadius: '10px', fontWeight: 'bold', fontSize: '1rem', color: '#00838f', marginBottom: '24px', boxShadow: '0 2px 8px rgba(0,131,143,0.07)', padding: '18px 20px' }}>
@@ -48,6 +45,14 @@ export default function AdminDashboard() {
             Welcome to the admin dashboard. Here you can manage lectures and generate QR codes
             for attendees to claim their POAPs.
           </p>
+        </div>
+        <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
+          <Link href="/admin/create">
+            <button className="btn-success" style={{ background: '#00838f', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, fontSize: '1rem', padding: '8px 18px', cursor: 'pointer', transition: 'background 0.2s' }}>Create New Lecture</button>
+          </Link>
+          <Link href="/admin/batch-add-lectures">
+            <button className="btn-secondary" style={{ background: '#e0f7fa', color: '#00838f', border: '1.5px solid #00838f', borderRadius: '8px', fontWeight: 600, fontSize: '1rem', padding: '8px 18px', cursor: 'pointer', transition: 'background 0.2s' }}>Batch Add Lectures</button>
+          </Link>
         </div>
         <LectureList refresh={refreshKey} />
       </div>
