@@ -188,6 +188,39 @@ export default function LectureList({ refresh }) {
     }
   };
 
+  // Desired attribute order for conference tokens
+  const orderedTraitTypes = [
+    'time_slot_name',
+    'title',
+    'date_start_plan',
+    'time_start_plan',
+    'date_end_plan',
+    'time_end_plan',
+    'venue',
+    'building',
+    'room',
+  ];
+
+  function getOrderedAttributes(attributes) {
+    if (!Array.isArray(attributes)) return attributes;
+    const traitTypes = attributes.map(attr => attr.trait_type);
+    // Only sort if all desired attributes are present
+    if (orderedTraitTypes.every(t => traitTypes.includes(t))) {
+      // Sort by our order, then append any extra attributes in their original order
+      const ordered = [];
+      const extras = [];
+      for (const t of orderedTraitTypes) {
+        const found = attributes.find(attr => attr.trait_type === t);
+        if (found) ordered.push(found);
+      }
+      for (const attr of attributes) {
+        if (!orderedTraitTypes.includes(attr.trait_type)) extras.push(attr);
+      }
+      return [...ordered, ...extras];
+    }
+    return attributes;
+  }
+
   return (
     <div>
       <h2 style={{ color: '#00838f', fontWeight: 700, letterSpacing: '-1px', fontSize: '2rem', marginBottom: '24px', fontFamily: 'Inter, Roboto, Open Sans, Arial, sans-serif' }}>Lecture List</h2>
@@ -291,7 +324,7 @@ export default function LectureList({ refresh }) {
                               </tr>
                             </thead>
                             <tbody>
-                              {metadata[lecture.id].attributes.map((attr) => (
+                              {getOrderedAttributes(metadata[lecture.id].attributes).map((attr) => (
                                 <tr key={`${lecture.id}-${attr.trait_type}-${attr.value}`}>
                                   <td style={{ padding: '8px', borderBottom: '1px solid #e0f7fa' }}>{attr.trait_type}</td>
                                   <td style={{ padding: '8px', borderBottom: '1px solid #e0f7fa' }}>{attr.value}</td>

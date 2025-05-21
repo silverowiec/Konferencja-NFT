@@ -97,46 +97,71 @@ const TokenDetails = ({ metadata }) => {
     );
   };
 
-  // Format attributes for display
+  // Desired attribute order for conference tokens
+const orderedTraitTypes = [
+  'time_slot_name',
+  'title',
+  'date_start_plan',
+  'time_start_plan',
+  'date_end_plan',
+  'time_end_plan',
+  'venue',
+  'building',
+  'room',
+];
+
+function getOrderedAttributes(attributes) {
+  if (!Array.isArray(attributes)) return attributes;
+  const traitTypes = attributes.map(attr => attr.trait_type);
+  // Only sort if all desired attributes are present
+  if (orderedTraitTypes.every(t => traitTypes.includes(t))) {
+    // Sort by our order, then append any extra attributes in their original order
+    const ordered = [];
+    const extras = [];
+    for (const t of orderedTraitTypes) {
+      const found = attributes.find(attr => attr.trait_type === t);
+      if (found) ordered.push(found);
+    }
+    for (const attr of attributes) {
+      if (!orderedTraitTypes.includes(attr.trait_type)) extras.push(attr);
+    }
+    return [...ordered, ...extras];
+  }
+  return attributes;
+}
+
+// Format attributes for display
   const renderAttributes = () => {
     if (!metadata.attributes || metadata.attributes.length === 0) {
       return <p className="no-traits">No traits available for this token</p>;
     }
-    
     // Filter out any invalid attributes
     const validAttributes = metadata.attributes.filter(
       attr => attr?.trait_type && attr.value !== undefined
     );
-    
     if (validAttributes.length === 0) {
       return <p className="no-traits">No traits available</p>;
     }
-    
     return (
-        validAttributes && (
-            <>
-              <h5>Attributes</h5>
-              <div className="attributes-table-container">
-                <table className="attributes-table">
-                  <thead>
-                    <tr>
-                      <th>Trait</th>
-                      <th>Value</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {validAttributes.map((attr) => (
-                      <tr key={attr.value}>
-                        <td>{attr.trait_type}</td>
-                        <td>{attr.value}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          
-    ));
+      <div className="attributes-table-container" style={{ marginTop: 10, marginBottom: 15, maxHeight: 200, overflowY: 'auto', border: '1px solid #e0f7fa', borderRadius: 8, background: '#fff' }}>
+        <table className="attributes-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+          <thead>
+            <tr>
+              <th style={{ backgroundColor: '#e0f7fa', padding: 8, textAlign: 'left', borderBottom: '1px solid #b2ebf2' }}>Trait</th>
+              <th style={{ backgroundColor: '#e0f7fa', padding: 8, textAlign: 'left', borderBottom: '1px solid #b2ebf2' }}>Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {getOrderedAttributes(validAttributes).map((attr) => (
+              <tr key={`${attr.trait_type}-${attr.value}`}>
+                <td style={{ padding: 8, borderBottom: '1px solid #e0f7fa' }}>{attr.trait_type}</td>
+                <td style={{ padding: 8, borderBottom: '1px solid #e0f7fa' }}>{attr.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
   };
   
   return (
@@ -154,54 +179,28 @@ const TokenDetails = ({ metadata }) => {
             <div className="metadata-info">
               <p><strong>Name:</strong> {metadata.name || 'Unnamed'}</p>
               <p><strong>Description:</strong> {(metadata.description || 'No description').substring(0, 100)}...</p>
-              
-              {/* Display attributes table */}
-              {metadata.attributes && metadata.attributes.length > 0 && (
-                <>
-                  <h5>Attributes</h5>
-                  <div className="attributes-table-container">
-                    <table className="attributes-table">
-                      <thead>
-                        <tr>
-                          <th>Trait</th>
-                          <th>Value</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {metadata.attributes.map((attr) => (
-                          <tr key={`${attr.trait_type}-${attr.value}`}>
-                            <td>{attr.trait_type}</td>
-                            <td>{attr.value}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {proof[0] && metadata.id === proof[0] && !window.location.pathname.includes('/token') && (
-                      <div>
-                        <h2><b>Proof:</b></h2>
-                        <div className="proof-container">
-                          {proof[1].substring(0, 20)}... 
-                          {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
-                          <button 
-                            className="copy-button" 
-                            onClick={() => navigator.clipboard.writeText(`${proof[1]}:(${proof[2]}):${account}`)}
-                          >
-                            Copy to clipboard 📋
-                          </button>
-                        </div>
-                      </div>
-                    ) || (
-                      <button                 style={{ background: '#00838f', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 22px', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,131,143,0.08)' }}
-
-                      type="button" className="btn-primary" onClick={handleGenerateProof}>
-                        Generate Proof
+              {renderAttributes()}
+              {proof[0] && metadata.id === proof[0] && !window.location.pathname.includes('/token') && (
+                  <div>
+                    <h2><b>Proof:</b></h2>
+                    <div className="proof-container">
+                      {proof[1].substring(0, 20)}... 
+                      {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
+                      <button 
+                        className="copy-button" 
+                        onClick={() => navigator.clipboard.writeText(`${proof[1]}:(${proof[2]}):${account}`)}
+                      >
+                        Copy to clipboard 📋
                       </button>
-                    )}
-                </>
-              )}
-                
-                
+                    </div>
+                  </div>
+                ) || (
+                  <button                 style={{ background: '#00838f', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 22px', fontWeight: 600, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,131,143,0.08)' }}
+
+                  type="button" className="btn-primary" onClick={handleGenerateProof}>
+                    Generate Proof
+                  </button>
+                )}
             </div>
           </div>
         </div>      
