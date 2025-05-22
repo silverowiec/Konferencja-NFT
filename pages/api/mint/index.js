@@ -54,7 +54,7 @@ export default async function handler(req, res) {
     }
 
     // Get admin private key from environment
-    const adminPrivateKey = process.env.ADMIN_PRIVATE_KEY;
+    const adminPrivateKey = process.env.PRIVATE_KEY_SGH;
     if (!adminPrivateKey) {
       console.error('Admin private key not configured');
       return res.status(500).json({ message: 'Server configuration error' });

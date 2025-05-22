@@ -18,7 +18,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: 'No lectures provided' });
     }
 
-    const adminPrivateKey = process.env.ADMIN_PRIVATE_KEY;
+    const adminPrivateKey = process.env.PRIVATE_KEY_SGH;
     if (!adminPrivateKey) {
       return res.status(500).json({ success: false, message: 'Server configuration error' });
     }
