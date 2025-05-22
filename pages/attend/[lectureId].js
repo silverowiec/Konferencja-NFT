@@ -636,7 +636,7 @@ export default function AttendLecture() {
                                       <li>On your MetaMask, switch to <b>Polygon</b> network</li>
                                       <li>Click on <b>NFTs</b> tab</li>
                                       <li>Click <b>IMPORT NFTs</b></li>
-                                      <li>Paste the contract address: <span style={{fontFamily:'monospace',fontSize:'0.97em'}}>{contractAddress}</span></li>
+                                      <li>Paste the contract address:<b>{contractAddress}</b></li>
                                       <li>Provide token id: <span style={{fontFamily:'monospace',fontSize:'0.97em'}}>{alreadyClaimed?.toString?.() || ''}</span></li>
                                       <li>Click <b>Import</b></li>
                                     </ol>
