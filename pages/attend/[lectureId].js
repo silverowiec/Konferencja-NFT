@@ -34,6 +34,7 @@ export default function AttendLecture() {
   
   // State for QR scanner modal
   const [showQrScanner, setShowQrScanner] = useState(false);
+  const [qrScannerConstraints, setQrScannerConstraints] = useState({ facingMode: 'environment' });
   
   // State for showing manual NFT import instructions
   const [showImportInstructions, setShowImportInstructions] = useState(false);
@@ -437,7 +438,7 @@ export default function AttendLecture() {
                       <div className="qr-modal" style={{position:'fixed',top:0,left:0,width:'100vw',height:'100vh',background:'rgba(0,0,0,0.7)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center'}}>
                         <div style={{background:'#fff',padding:'24px',borderRadius:'10px',boxShadow:'0 2px 16px #0008',maxWidth:'95vw'}}>
                           <h3>Scan QR Code</h3>
-                          <QrScanner onScan={handleQrScan} onError={handleQrError} active={showQrScanner} />
+                          <QrScanner onScan={handleQrScan} onError={handleQrError} active={showQrScanner} constraints={qrScannerConstraints} />
                           <button type="button" style={{marginTop:'16px'}} onClick={()=>setShowQrScanner(false)}>Cancel</button>
                         </div>
                       </div>
