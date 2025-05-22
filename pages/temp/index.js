@@ -43,7 +43,7 @@ export default function Home() {
   return (
     <Layout title="CoNFT System - Home">
       <div>
-        <h1 style={{ marginBottom: '20px' }}>Welcome to Session POAP App.</h1>
+        <h1 style={{ marginBottom: '20px' }}>Welcome to CoNFT POAP App.</h1>
         
         {/* Tabs for different sections */}
         <div className="tabs">
