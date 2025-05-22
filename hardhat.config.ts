@@ -17,6 +17,11 @@ const config: HardhatUserConfig = {
       url: process.env.NEXT_PUBLIC_RPC_URL || "https://eth-sepolia.g.alchemy.com/v2/DxkZhIv-5PdWbuxadMveZF9VCysJxPlq",
       accounts: [ADMIN_PRIVATE_KEY],
     },
+    matic: {
+      url: process.env.NEXT_PUBLIC_RPC_URL,
+      accounts: [ADMIN_PRIVATE_KEY],
+      chainId: 137,
+    },
     // Local development network
     hardhat: {
       chainId: 1337,
@@ -29,7 +34,7 @@ const config: HardhatUserConfig = {
     tests: "./test",
   },
   etherscan: {
-    apiKey:  process.env.ETHERSCAN_API_KEY
+    apiKey:  process.env.ETHERSCAN_API_KEY || '',
   }
 };
 
