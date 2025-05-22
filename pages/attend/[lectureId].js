@@ -92,7 +92,7 @@ export default function AttendLecture() {
   const connectWallet = async () => {
     try {
       if (!window.ethereum) {
-        throw new Error('MetaMask is not installed. Please install MetaMask to continue.');
+        throw new Error('MetaMask is not installed or you use mobile browser instead of MetaMask browser');
       }
       
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -259,7 +259,7 @@ export default function AttendLecture() {
   const importTokenToMetaMask = async () => {
     try {
       if (!window.ethereum) {
-        throw new Error('MetaMask is not installed');
+        throw new Error('MetaMask is not installed or you use mobile browser instead of MetaMask browser');
       }
             
       if (!alreadyClaimed) {

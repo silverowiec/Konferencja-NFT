@@ -87,7 +87,7 @@ const MetaMaskWallet = () => {
 
     try {
       if (!isBrowser || typeof window.ethereum === 'undefined') {
-        throw new Error('MetaMask is not installed. Please install MetaMask to continue.');
+        throw new Error('MetaMask is not installed or you use mobile browser instead of MetaMask browser');
       }
 
       // Request account access
