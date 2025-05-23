@@ -179,7 +179,7 @@ function getOrderedAttributes(attributes) {
               />
             </div>
             <div className="metadata-info">
-              <p><strong>ID:</strong> {metadata.id || 'Error'}</p>
+              <p><strong>ID:</strong> {metadata.id  || 'loading...'}</p>
               <p><strong>Name:</strong> {metadata.name || 'Unnamed'}</p>
               <p><strong>Description:</strong> {(metadata.description || 'No description').substring(0, 100)}...</p>
               {/* Show explorer link if txHash is present in metadata */}

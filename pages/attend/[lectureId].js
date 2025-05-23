@@ -459,7 +459,7 @@ export default function AttendLecture() {
                 {/* Show claim POAP only after both code and wallet are verified/connected */}
                 {codeVerified && walletConnected && (
                   <div style={{ marginTop: '20px' }}>
-                    <p>Connected Wallet: {walletAddress}</p>
+                    Connected Wallet: {walletAddress}
                     {/* Always show txHash if present, after a mint */}
                     {txHash && (
                       <div style={{ marginTop: '10px' }}>
